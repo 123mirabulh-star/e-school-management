@@ -1,0 +1,1244 @@
+# ADVANCED MASTER PROMPT
+# Complete School Management Web Application for Bangladesh
+## Dynamic Results, Editable Subjects, Custom Mark Distribution, Mark Conversion, Fees, Attendance, Reports, Security and Deployment
+
+## 1. ROLE AND PROJECT OBJECTIVE
+
+Act as a Senior Full-Stack Software Engineer, Python Backend Developer, Database Architect, UI/UX Designer, School Management System Specialist, Cybersecurity Engineer, QA Engineer, and DevOps Engineer.
+
+Build a complete, professional, responsive, secure, database-driven School Management Web Application designed for schools in Bangladesh.
+
+The system must be a real, working web application, not merely a static dashboard, frontend prototype, or design mockup.
+
+### Technology stack
+
+- Frontend: HTML5, CSS3, Vanilla JavaScript.
+- Backend: Python 3 and Flask.
+- Database ORM: SQLAlchemy.
+- Local development database: SQLite.
+- Production database: PostgreSQL.
+- Database migrations: Flask-Migrate and Alembic.
+- Charts: Chart.js.
+- PDF generation: ReportLab or an appropriate server-side PDF library.
+- Excel generation: openpyxl.
+- Authentication: Secure server-side sessions and password hashing.
+- Icons: Lucide or Font Awesome.
+- Production server: A suitable WSGI server such as Gunicorn on supported Linux hosting.
+- Version control: Git.
+
+Use compatible, documented dependency versions and provide a complete requirements.txt file.
+
+The application must support local development, real database persistence, multiple authorized users, and deployment to a public domain using compatible hosting.
+
+Do not use localStorage as the main database. Do not simulate database operations using hardcoded JavaScript arrays. Do not claim a feature is complete unless its backend, frontend, database integration, and necessary tests are implemented.
+
+---
+
+## 2. PROFESSIONAL DASHBOARD UI/UX
+
+Create a polished administration dashboard inspired by modern education-management SaaS products.
+
+### Design system
+
+Use the following suggested palette:
+
+- Sidebar: #101B35.
+- Primary blue: #2563EB.
+- Workspace background: #F4F7FB.
+- Card background: #FFFFFF.
+- Success green: #16A34A.
+- Warning orange: #F59E0B.
+- Danger red: #DC2626.
+- Info cyan: #06B6D4.
+- Purple: #7C3AED.
+- Primary text: #1E293B.
+- Secondary text: #64748B.
+
+Use CSS variables, rounded cards, subtle borders, restrained shadows, readable typography, consistent spacing, and simple line icons.
+
+The interface must be fully responsive for desktop, laptop, tablet, and mobile screens.
+
+Use suitable Bangla and English fonts, including Noto Sans Bengali and a compatible Latin font.
+
+### Sidebar navigation
+
+Include:
+
+1. Dashboard.
+2. Students.
+3. Admissions.
+4. Classes and Sections.
+5. Subjects.
+6. Teachers.
+7. Staff.
+8. Attendance.
+9. Fee Structure.
+10. Fee Collection.
+11. Payments and Receipts.
+12. Income and Expenses.
+13. Examinations.
+14. Mark Distribution.
+15. Mark Conversion.
+16. Marks Entry.
+17. Results.
+18. Grading Settings.
+19. Class Routine.
+20. Notices.
+21. Reports.
+22. User Management.
+23. Audit Logs.
+24. Backup and Restore.
+25. School Settings.
+26. Logout.
+
+Group related menus logically. Highlight the active menu item and support a collapsible mobile sidebar.
+
+### Dashboard statistic cards
+
+Display:
+
+- Total Active Students.
+- Total Fees Collected.
+- Outstanding Fees.
+- Total Expenses.
+- Total Teachers.
+- Total Staff.
+- Today's Attendance.
+- Recent Admissions.
+
+Add:
+
+- Monthly Fee Collection chart.
+- Students by Class chart.
+- Income vs Expenses chart.
+- Attendance summary.
+- Fee Payment Status chart.
+- Recent Payments table.
+- Fee Defaulters table.
+- Recent Admissions table.
+- Latest Notices.
+- Upcoming Examinations.
+- Recent Administrative Activities.
+
+Every statistic and chart must be generated from actual database records using efficient backend queries.
+
+### Quick actions
+
+Provide working buttons for:
+
+- Add Student.
+- New Admission.
+- Add Subject.
+- Create Examination.
+- Configure Mark Distribution.
+- Configure Mark Conversion.
+- Enter Marks.
+- Generate Results.
+- Collect Fees.
+- Mark Attendance.
+- Add Teacher.
+- Add Expense.
+- Publish Notice.
+- Generate Reports.
+- Export Data.
+
+Every button must open a real page, form, or valid workflow.
+
+---
+
+## 3. SCHOOL SETTINGS AND INITIAL CONFIGURATION
+
+Provide an initial setup wizard.
+
+Allow administrators to configure:
+
+- School name in Bangla and English.
+- Logo.
+- Address.
+- Contact information.
+- EIIN or institution identifier where applicable.
+- School type.
+- Academic years.
+- Classes, sections, and shifts.
+- Subjects and subject assignments.
+- Grading policy.
+- Examination rules.
+- Fee structure.
+- Currency: BDT.
+- Date format.
+- Time zone: Asia/Dhaka.
+- Receipt format.
+- Report card design.
+- School signature and seal information.
+
+All ordinary configuration changes must be available through the application interface.
+
+Do not hardcode a specific school name, academic year, class list, subject list, fee amount, or grading policy.
+
+Support a default setup for Classes 1–10 while allowing authorized administrators to add more classes and educational levels.
+
+---
+
+## 4. AUTHENTICATION AND USER PERMISSIONS
+
+Implement secure login, logout, password change, session management, and account management.
+
+Support these roles:
+
+- Super Admin.
+- School Administrator.
+- Accountant.
+- Teacher.
+- Office Staff.
+- Student.
+- Guardian.
+
+Implement role-based and permission-based access control.
+
+The administrator must be able to manage which users can:
+
+- Add records.
+- View records.
+- Edit records.
+- Archive records.
+- Delete permitted records.
+- Enter marks.
+- Edit marks.
+- Configure subjects.
+- Configure mark distributions.
+- Configure conversion rules.
+- Calculate results.
+- Approve results.
+- Publish results.
+- Correct published results.
+- Access financial information.
+- Export reports.
+- Manage users and settings.
+
+Enforce permissions on the backend for every protected operation. Hiding a button in the frontend is not sufficient security.
+
+Use secure password hashing, CSRF protection, input validation, rate limiting, safe session configuration, and audit logging.
+
+Create the initial administrator through a secure setup procedure. Do not ship a permanent default password.
+
+---
+
+## 5. STUDENT AND ADMISSION MANAGEMENT
+
+Implement complete student record management.
+
+Student fields should include:
+
+- Unique student ID.
+- Admission number.
+- Name in Bangla.
+- Name in English.
+- Date of birth.
+- Photo.
+- Class.
+- Section.
+- Roll number.
+- Academic year.
+- Admission date.
+- Guardian name and relationship.
+- Guardian contact information.
+- Address.
+- Enrollment status.
+- Optional previous institution information.
+
+Provide:
+
+- Add, view, edit, and archive student records.
+- Admission form.
+- Student profile.
+- Search by name, ID, admission number, roll, or guardian contact.
+- Class, section, academic year, and status filters.
+- Student promotion.
+- Section transfer.
+- Transfer certificate records.
+- ID card printing.
+- Student register.
+- CSV import with validation and error reporting.
+
+Prevent duplicate admission numbers and invalid enrollment assignments.
+
+Preserve historical academic and financial records when students are archived.
+
+---
+
+## 6. CLASSES, SECTIONS, SUBJECTS AND TEACHERS
+
+Create a dynamic academic structure.
+
+Manage:
+
+- Academic years.
+- Classes.
+- Sections.
+- Shifts.
+- Subjects.
+- Class-subject assignments.
+- Subject papers.
+- Teachers.
+- Staff.
+- Class teachers.
+- Subject teachers.
+- Teacher assignments.
+
+Allow subjects to be assigned differently for each class, academic year, and examination where necessary.
+
+### Dynamic Subject Management
+
+Create a dedicated Subject Management page.
+
+Administrators must be able to:
+
+- Add a new subject.
+- Edit an existing subject.
+- Change subject names in Bangla and English.
+- Change subject code.
+- Configure subject type.
+- Assign subjects to classes.
+- Assign subjects to academic years.
+- Set compulsory, optional, or elective status.
+- Assign subject teachers.
+- Configure full marks.
+- Configure pass marks.
+- Configure theory, MCQ, practical, oral, and other components.
+- Enable or deactivate a subject.
+- View all subjects assigned to a class.
+- Search, filter, and sort subjects.
+- Import or export subject configurations where appropriate.
+
+All subject information must be stored in the database.
+
+Do not hardcode subject names or subject configurations in Python route files, HTML templates, or JavaScript.
+
+When a subject is edited, preserve the historical configurations associated with published examinations.
+
+Prevent deletion of a subject that is referenced by existing marks or results. Use deactivation or controlled archival instead.
+
+A subject may have different mark configurations in different classes, academic years, and examinations.
+
+---
+
+## 7. EXAMINATION MANAGEMENT
+
+Create a complete examination setup module.
+
+Administrators must be able to create, edit, activate, close, and archive examinations.
+
+Examples:
+
+- Class Test.
+- Monthly Examination.
+- Half-Yearly Examination.
+- Annual Examination.
+- Model Test.
+- Pre-Test.
+- Custom Examination.
+
+For every examination, configure:
+
+- Examination name.
+- Academic year.
+- Class.
+- Applicable sections.
+- Subjects.
+- Examination date or schedule.
+- Maximum marks.
+- Mark distribution.
+- Mark conversion rules.
+- Grading policy.
+- Result calculation method.
+- Result publication status.
+
+Allow an examination to use different configurations for different subjects.
+
+Support a workflow of Draft, Marks Entry, Submitted, Approved, Published, and Archived where applicable.
+
+Do not allow an unauthorized user to publish or alter examination results.
+
+---
+
+## 8. MARK DISTRIBUTION MANAGEMENT
+
+This is a mandatory, fully editable module.
+
+Create a dedicated Mark Distribution menu.
+
+The administrator must be able to configure the marks of each subject through the user interface without modifying the source code.
+
+### Configurable assessment components
+
+Allow unlimited practical component rows, subject to reasonable validation.
+
+Examples include:
+
+- Written.
+- MCQ.
+- Practical.
+- Oral.
+- Assignment.
+- Class Test.
+- Continuous Assessment.
+- Paper 1.
+- Paper 2.
+- Other Custom Components.
+
+For each component, configure:
+
+- Component name.
+- Maximum marks.
+- Pass marks, if applicable.
+- Weight or contribution.
+- Mandatory or optional status.
+- Ordering.
+- Whether it contributes to the final subject result.
+- Conversion method.
+- Applicable class.
+- Applicable academic year.
+- Applicable examination.
+- Applicable subject.
+
+### Example configuration A
+
+Bangla:
+
+- Written: 70.
+- MCQ: 30.
+- Total: 100.
+
+### Example configuration B
+
+Mathematics:
+
+- Written: 50.
+- MCQ: 25.
+- Practical: 25.
+- Total: 100.
+
+### Example configuration C
+
+English:
+
+- Paper 1: 50.
+- Paper 2: 50.
+- Combined subject total: 100.
+
+These are examples only. Administrators must be able to create other configurations.
+
+### Validation rules
+
+- Validate that the configured distribution matches the intended subject full marks.
+- If weights are used, validate the weights according to the selected calculation policy.
+- Show errors when totals or weights are inconsistent.
+- Do not silently change any configured value.
+- Do not allow entered marks to exceed component maximum marks.
+- Allow different subjects to have different distributions.
+- Allow different examinations to have different distributions.
+- Allow distributions to be copied from another examination or academic year, with administrator confirmation.
+- Allow administrators to preview the resulting calculation.
+
+Maintain a version history whenever a configuration changes.
+
+---
+
+## 9. MARK CONVERSION MANAGEMENT
+
+Create a dedicated Mark Conversion menu.
+
+Administrators must be able to configure mark conversion through a graphical form.
+
+Support the following methods:
+
+1. Direct marks without conversion.
+2. Proportional conversion.
+3. Weighted contribution.
+4. Addition of multiple assessment components.
+5. Configurable decimal precision and rounding.
+6. Safe, validated custom formulas using predefined mathematical operations.
+
+### Proportional conversion formula
+
+Converted Marks = Obtained Marks × Target Full Marks ÷ Original Full Marks.
+
+Example:
+
+- Original full marks: 100.
+- Obtained marks: 80.
+- Target full marks: 50.
+- Converted marks: 40.
+
+### Configurable options
+
+Allow rules to be configured at appropriate levels:
+
+- School.
+- Academic year.
+- Class.
+- Examination.
+- Subject.
+- Assessment component.
+
+Allow administrators to set:
+
+- Original full marks.
+- Target full marks.
+- Conversion formula type.
+- Weight.
+- Decimal precision.
+- Rounding method.
+- Minimum and maximum permitted marks.
+- Applicable component.
+- Whether the conversion contributes to the final subject result.
+
+Provide a preview that shows original marks, converted marks, formula, and target maximum.
+
+Do not execute arbitrary Python, JavaScript, SQL, or shell code from a custom formula field.
+
+Use a safe calculation engine with predefined operations.
+
+Prevent division by zero and reject invalid conversion configurations.
+
+Keep original marks separate from converted marks.
+
+---
+
+## 10. SUBJECT-WISE FULL MARKS AND PASS MARKS
+
+Provide an editable configuration interface for each subject.
+
+Allow the administrator to set:
+
+- Subject full marks.
+- Subject pass marks.
+- Component full marks.
+- Component pass marks.
+- Original full marks.
+- Converted full marks.
+- Required component passing rules.
+- Subject type.
+- Optional subject policy.
+- Grading policy.
+- Result calculation method.
+
+Support different values for each class, academic year, examination, and subject.
+
+Example:
+
+| Subject | Component | Full Marks |
+|---|---|---:|
+| Bangla | Written | 70 |
+| Bangla | MCQ | 30 |
+| Mathematics | Written | 50 |
+| Mathematics | MCQ | 25 |
+| Mathematics | Practical | 25 |
+| English | Paper 1 | 50 |
+| English | Paper 2 | 50 |
+
+These values must be editable through the software interface.
+
+Do not assume all subjects have 100 marks.
+
+When changing a configuration that has existing marks, show the impact before saving.
+
+When a result has already been published, preserve the original configuration version and calculated result snapshot.
+
+Require authorized confirmation before correcting or republishing historical results.
+
+---
+
+## 11. MARKS ENTRY SYSTEM
+
+Create a dedicated Marks Entry interface.
+
+The workflow must be:
+
+1. Select academic year.
+2. Select examination.
+3. Select class.
+4. Select section.
+5. Select subject.
+6. Load the configured assessment components.
+7. Enter marks for students.
+8. Preview calculations.
+9. Validate the entries.
+10. Save as draft.
+11. Submit for approval.
+12. Approve and publish according to permissions.
+
+### Marks-entry table
+
+Display:
+
+- Student roll.
+- Student ID.
+- Student name.
+- Component-wise maximum marks.
+- Component-wise obtained marks.
+- Converted marks.
+- Total marks.
+- Status.
+- Save or validation status.
+
+Support bulk entry, keyboard-friendly navigation, draft saving, and authorized editing.
+
+Allow missing, absent, and exempted statuses to be distinguished. Do not automatically treat missing marks as zero unless the selected policy explicitly requires it.
+
+Prevent duplicate entries for the same student, examination, subject, and component.
+
+Validate all entries on the backend, not only in JavaScript.
+
+Record who entered or changed the marks and when.
+
+---
+
+## 12. RESULT CALCULATION ENGINE
+
+Create a reusable Python result-calculation service.
+
+It must calculate results from database records and the active configuration.
+
+Support:
+
+- Component-wise original marks.
+- Component-wise converted marks.
+- Weighted marks.
+- Subject-wise totals.
+- Subject full marks.
+- Subject percentage.
+- Subject pass/fail.
+- Total obtained marks.
+- Total maximum marks.
+- Overall percentage.
+- Letter grades.
+- Grade points.
+- GPA where applicable.
+- Overall pass/fail.
+- Optional subject rules.
+- Configurable merit lists.
+
+### Configurable grading policy
+
+Create a Grading Settings page.
+
+Allow administrators to edit:
+
+- Percentage ranges.
+- Letter grades.
+- Grade points.
+- Decimal precision.
+- Rounding method.
+- Subject passing criteria.
+- Mandatory component passing criteria.
+- Overall passing rules.
+- Optional subject GPA rules.
+- Merit-list eligibility.
+- Examination-specific grading policies.
+
+Do not hardcode a single grading scale for every school.
+
+Use the configured policy associated with the relevant class, academic year, and examination.
+
+Make all calculations deterministic and testable.
+
+When any configuration changes, validate whether it affects existing results.
+
+### Combined examinations
+
+Allow an administrator to combine multiple examinations using configurable weights.
+
+Example:
+
+- Half-Yearly: 40%.
+- Annual: 60%.
+
+These percentages are illustrative. Administrators must be able to change them.
+
+Support alternative calculation methods when selected by the school's policy.
+
+Validate the total weights and ensure that missing examinations, absent students, and exempted components are handled according to explicit rules.
+
+---
+
+## 13. RESULT MANAGEMENT — ADD, EDIT, GENERATE AND PUBLISH
+
+This is one of the most important modules.
+
+Create a dedicated Results section with the following pages:
+
+- Result Dashboard.
+- Examination Results.
+- Generate Results.
+- Individual Student Result.
+- Class Result Sheet.
+- Result Correction.
+- Published Results.
+- Grading Settings.
+- Result History.
+
+### Generate Results
+
+Allow authorized users to:
+
+- Select academic year.
+- Select examination.
+- Select class and section.
+- Select subjects.
+- Calculate results.
+- Preview all marks and grades.
+- Validate calculation errors.
+- Save results as drafts.
+- Submit results for approval.
+- Publish results.
+
+### Editable result management
+
+Administrators must be able to edit:
+
+- Examination configuration.
+- Subject assignments.
+- Mark distribution.
+- Mark conversion.
+- Grading policy.
+- Marks entries.
+- Result calculation settings.
+
+However, results must follow a controlled workflow.
+
+If the marks or settings change before publication, recalculate the draft results.
+
+If results have already been published, do not silently overwrite them.
+
+Require authorized correction, recalculate affected records, preserve the previous version, record the reason for the correction, and require approval before republishing.
+
+Provide an audit trail containing the old value, new value, user, timestamp, and correction reason where appropriate.
+
+Keep published-result snapshots so that later changes to the general grading settings do not unexpectedly alter historical results.
+
+### Individual result page
+
+Display:
+
+- School logo and name.
+- Student name.
+- Student ID.
+- Roll.
+- Class and section.
+- Academic year.
+- Examination name.
+- Subject-wise obtained marks.
+- Subject-wise full marks.
+- Converted marks where applicable.
+- Letter grades.
+- Grade points.
+- Total marks.
+- Percentage.
+- GPA, where applicable.
+- Pass/fail status.
+- Authorized signatures.
+
+Provide a printable mark sheet and PDF download.
+
+### Result reports
+
+Support:
+
+- Individual mark sheets.
+- Class result sheets.
+- Subject-wise result reports.
+- Component-wise marks reports.
+- Original-versus-converted marks reports.
+- Failed-subject reports.
+- GPA reports.
+- Merit lists where authorized.
+- Examination summary reports.
+
+Allow PDF, CSV, and Excel exports with permission checks.
+
+---
+
+## 14. ATTENDANCE MANAGEMENT
+
+Implement student and staff attendance.
+
+Features:
+
+- Select date, class, and section.
+- Mark Present, Absent, Late, and Leave.
+- Bulk attendance.
+- Authorized correction.
+- Daily and monthly reports.
+- Student attendance history.
+- Attendance percentage.
+- Dashboard summaries.
+
+Prevent duplicate attendance records for the same student and date.
+
+Record who entered or modified attendance.
+
+---
+
+## 15. FEES AND PAYMENT MANAGEMENT
+
+Create a complete fee-management module.
+
+Support:
+
+- Admission fees.
+- Monthly tuition fees.
+- Examination fees.
+- Registration fees.
+- Session fees.
+- Transport fees.
+- Laboratory fees.
+- Library fees.
+- Other configurable charges.
+
+Allow administrators to edit fee categories and create fee structures by class, academic year, student category, and billing period.
+
+Provide:
+
+- Individual and bulk fee demands.
+- Full payments.
+- Partial payments.
+- Discounts.
+- Approved waivers.
+- Outstanding balances.
+- Student fee ledgers.
+- Payment history.
+- Unique receipt numbers.
+- Printable receipts.
+- Payment corrections and reversals.
+- Daily and monthly collection reports.
+- Class-wise collection reports.
+- Fee defaulter reports.
+
+Use fixed-precision decimal arithmetic for money.
+
+Use database transactions to prevent duplicate collections and inconsistent balances.
+
+Never silently overwrite a financial transaction.
+
+Support cash, bank transfer, and mobile financial services as payment-method records.
+
+Do not claim a payment gateway is integrated until a real provider has been configured and tested.
+
+---
+
+## 16. INCOME AND EXPENSE MANAGEMENT
+
+Include:
+
+- Income categories.
+- Expense categories.
+- Income transactions.
+- Expense transactions.
+- Payment methods.
+- Reference numbers.
+- Transaction dates.
+- Descriptions.
+- Supporting documents where applicable.
+
+Provide daily summaries, monthly summaries, category reports, and income-versus-expense charts.
+
+Prevent duplicate counting of fee collections as separate income.
+
+Do not report a verified bank balance unless the required opening balances and bank transactions are modeled.
+
+---
+
+## 17. NOTICES AND COMMUNICATION
+
+Allow authorized users to create, edit, publish, and archive notices.
+
+Include:
+
+- Notice title.
+- Bangla and English content where needed.
+- Publication date.
+- Expiry date.
+- Target audience.
+- Target class or section.
+- Published-by information.
+- Optional attachments.
+
+Show the latest notices on the dashboard.
+
+Implement email, SMS, or other notification integrations only when the appropriate provider is configured.
+
+---
+
+## 18. REPORTS AND EXPORTS
+
+Create a central Reports section containing:
+
+- Student register.
+- Admission report.
+- Attendance reports.
+- Subject-wise student lists.
+- Fee collection reports.
+- Outstanding fee reports.
+- Financial reports.
+- Examination reports.
+- Mark sheets.
+- Result sheets.
+- GPA reports.
+- Teacher and staff lists.
+- Administrative activity reports.
+
+Support PDF, CSV, and Excel exports.
+
+Apply active filters and permission rules to exports.
+
+Use professional school headers, dates, page numbering where applicable, and readable Bangla text.
+
+---
+
+## 19. DATABASE DESIGN
+
+Use SQLAlchemy with relational models and appropriate foreign keys.
+
+Create models for:
+
+- Schools.
+- Users.
+- Roles.
+- Permissions.
+- Students.
+- Guardians.
+- Academic years.
+- Classes.
+- Sections.
+- Enrollments.
+- Subjects.
+- Class-subject assignments.
+- Teachers.
+- Teacher assignments.
+- Attendance.
+- Examinations.
+- Examination-subject configurations.
+- Assessment components.
+- Mark distribution rules.
+- Mark conversion rules.
+- Grading policies.
+- Grading bands.
+- Student examination registrations.
+- Component-wise marks.
+- Calculated subject results.
+- Final examination results.
+- Published-result snapshots.
+- Result approval records.
+- Configuration versions.
+- Fee categories.
+- Fee structures.
+- Student charges and invoices.
+- Payments.
+- Payment allocations.
+- Payment reversals.
+- Income and expense transactions.
+- Notices.
+- Uploaded-file metadata.
+- Audit logs.
+- Application settings.
+
+Define unique constraints, indexes, relationships, and appropriate deletion policies.
+
+Preserve original marks separately from converted marks and final calculated marks.
+
+Use database transactions for related updates.
+
+Use Alembic or Flask-Migrate for schema migrations.
+
+Use SQLite locally and PostgreSQL in production.
+
+Do not store passwords in plain text.
+
+Do not delete historical marks or financial transactions through ordinary record-management actions.
+
+---
+
+## 20. APPLICATION ARCHITECTURE
+
+Use a modular Flask architecture.
+
+Suggested structure:
+
+school_management/
+- app/
+  - __init__.py
+  - models/
+  - routes/
+  - services/
+  - forms/
+  - templates/
+  - static/
+    - css/
+    - js/
+    - images/
+  - utils/
+- migrations/
+- tests/
+- instance/
+- config.py
+- run.py
+- requirements.txt
+- .env.example
+- .gitignore
+- README.md
+
+Separate:
+
+- Database models.
+- Business logic.
+- Routes.
+- Templates.
+- Frontend assets.
+- Validation.
+- Result-calculation services.
+- Financial-calculation services.
+- PDF and export services.
+
+Create reusable components for forms, tables, pagination, alerts, navigation, and confirmation dialogs.
+
+Use server-side pagination for large datasets.
+
+---
+
+## 21. SECURITY REQUIREMENTS
+
+Implement:
+
+- Secure password hashing.
+- Server-side authorization.
+- CSRF protection.
+- Safe ORM query handling.
+- XSS protection.
+- Secure session cookies.
+- Login rate limiting.
+- Input validation.
+- File-upload restrictions.
+- Audit logs.
+- Protected exports.
+- Secret management through environment variables.
+- HTTPS in production.
+- Safe error messages.
+- Restricted access to private student and financial records.
+
+Do not expose stack traces, secrets, or database credentials to end users.
+
+Do not commit real secrets or production student data to Git.
+
+---
+
+## 22. BACKUP AND RECOVERY
+
+Provide an administrator-only backup and recovery module.
+
+Include:
+
+- Database backup.
+- Backup timestamps.
+- Backup metadata.
+- Retention policy.
+- Integrity checks.
+- Controlled restore workflow.
+- Recovery documentation.
+
+Use appropriate backup mechanisms for SQLite and PostgreSQL.
+
+Store backups outside public static directories.
+
+Validate backup files and require confirmation before restoring.
+
+Test the recovery process before production use.
+
+---
+
+## 23. TESTING AND QUALITY ASSURANCE
+
+Create automated tests for critical features.
+
+### Subject and marks tests
+
+- Add a subject.
+- Edit a subject.
+- Assign a subject to a class.
+- Configure different full marks for different subjects.
+- Configure written, MCQ, and practical components.
+- Change mark distribution.
+- Convert 80/100 to 40/50.
+- Calculate weighted marks.
+- Reject invalid distributions.
+- Apply different grading policies.
+- Handle absent students and missing marks.
+- Reject marks above the maximum.
+- Handle optional subjects according to the configured policy.
+- Preserve published-result snapshots.
+- Correct and republish results with authorization.
+- Generate accurate mark sheets.
+
+### Other tests
+
+- Authentication.
+- Role-based access.
+- Student admission.
+- Attendance validation.
+- Partial fee payments.
+- Duplicate payment prevention.
+- Financial reports.
+- PDF and Excel exports.
+- Database migrations.
+- Backup and recovery procedures.
+
+Use isolated test databases and representative test data.
+
+Do not claim a test has passed unless it has actually been executed.
+
+---
+
+## 24. LOCAL INSTALLATION ON WINDOWS
+
+Provide step-by-step Windows instructions.
+
+Explain:
+
+1. Installing Python.
+2. Opening the project folder.
+3. Creating a virtual environment.
+4. Activating the environment.
+5. Installing dependencies.
+6. Configuring environment variables.
+7. Initializing the database.
+8. Running migrations.
+9. Creating the first administrator securely.
+10. Starting the application.
+11. Opening the application in a browser.
+12. Running tests.
+13. Troubleshooting common errors.
+
+Provide exact PowerShell commands and explain relevant Command Prompt differences.
+
+The database must preserve information after restarting the server.
+
+---
+
+## 25. DOMAIN, HOSTING AND PRODUCTION DEPLOYMENT
+
+Prepare the application for deployment to a real domain.
+
+Provide instructions for:
+
+- Selecting compatible Python hosting.
+- Creating a PostgreSQL database.
+- Configuring production environment variables.
+- Installing dependencies.
+- Running migrations.
+- Creating an administrator.
+- Configuring a production WSGI server.
+- Connecting a custom domain.
+- Configuring DNS.
+- Enabling HTTPS.
+- Securing cookies.
+- Configuring static assets.
+- Using persistent storage for uploads.
+- Scheduling backups.
+- Monitoring errors.
+- Updating the application.
+- Restoring service after a failure.
+
+Do not use Flask's development server as the production server.
+
+Do not assume local filesystem storage persists on every hosting provider.
+
+Do not hardcode the production domain, credentials, or secret keys.
+
+Explain domain, application hosting, database hosting, and file storage separately.
+
+---
+
+## 26. MANDATORY DELIVERABLES
+
+Provide:
+
+1. Complete project directory structure.
+2. All Python backend files.
+3. All HTML templates.
+4. All CSS files.
+5. All JavaScript files.
+6. SQLAlchemy models.
+7. Database migrations.
+8. Authentication and authorization.
+9. Functional dashboard.
+10. Student and admission modules.
+11. Dynamic subject management.
+12. Examination management.
+13. Editable mark distribution.
+14. Editable mark conversion.
+15. Editable grading settings.
+16. Marks entry.
+17. Result calculation and correction.
+18. Result approval and publication.
+19. PDF mark sheets.
+20. Fee and financial modules.
+21. Attendance.
+22. Notices.
+23. Reports and exports.
+24. Backup and recovery.
+25. Automated tests.
+26. requirements.txt.
+27. .env.example without real secrets.
+28. .gitignore.
+29. README.md.
+30. Windows installation guide.
+31. Production deployment guide.
+32. A checklist distinguishing implemented, tested, and unverified features.
+
+Do not replace required files with placeholders.
+
+If the project is too large for one response, implement it in numbered phases with complete files and explicit continuation instructions.
+
+Preserve previously completed functionality when continuing to the next phase.
+
+---
+
+## 27. FINAL ACCEPTANCE CRITERIA
+
+The application must be evaluated against these conditions:
+
+- Login and role-based permissions work.
+- The dashboard reads actual database records.
+- Students can be created and edited.
+- Subjects can be added and edited through the UI.
+- Subjects can be assigned to different classes and academic years.
+- Full marks and pass marks are editable.
+- Mark distribution can be changed through the UI.
+- Mark conversion rules can be changed through the UI.
+- Marks can be entered and validated.
+- Results can be calculated automatically.
+- Grades and GPA follow the configured policy.
+- Results can be corrected through an authorized workflow.
+- Published results preserve their historical configuration.
+- PDF mark sheets contain accurate calculations.
+- Fees, attendance, expenses, and reports work with real records.
+- Unauthorized operations are rejected.
+- Critical tests pass.
+- Backup and recovery procedures are documented and tested.
+- Production deployment can be completed using the supplied guide.
+
+## FINAL INSTRUCTION TO THE AI CODING AGENT
+
+Begin by presenting the architecture, database relationships, project structure, and dashboard layout.
+
+Then implement the application incrementally, starting with the project foundation and secure authentication.
+
+Next, implement the dynamic Subject Management, Mark Distribution, Mark Conversion, Marks Entry, Grading Settings, and Result Management modules.
+
+All ordinary academic configuration must be editable through the application's interface without changing source code.
+
+Prioritize correct calculations, database integrity, historical result preservation, security, maintainability, and responsive design.
+
+Never present a visual prototype as a completed application. Verify the implemented workflows and clearly disclose any remaining limitations.
+
+The final objective is a complete, extensible, database-driven school management system suitable for deployment on a real domain and hosting service in Bangladesh.

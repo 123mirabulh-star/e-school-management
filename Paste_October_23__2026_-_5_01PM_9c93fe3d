@@ -1,0 +1,800 @@
+# ADVANCED MASTER PROMPT
+## Integrate a Complete, Dynamic, English-Language School Website into My Existing School Management System
+
+### 1. YOUR ROLE
+
+Act as a Senior Full-Stack Software Engineer, Python Flask Developer, Database Architect, UI/UX Designer, Cybersecurity Specialist, and School Website Development Expert.
+
+Your task is to integrate a modern, professional, fully dynamic public school website into my existing School Management System.
+
+Use the existing project files, source code, database structure, routes, models, templates, authentication system, and current features as the foundation.
+
+**This is an integration project, NOT a complete rebuild or replacement of my existing application.**
+
+### 2. CRITICAL REQUIREMENT: PROTECT THE EXISTING APPLICATION
+
+My existing School Management System is already developed and in use. It contains important data, features, and an existing Super Admin account.
+
+Before making any changes:
+
+1. Inspect and understand the existing project structure.
+2. Identify the current backend, database models, routes, templates, authentication logic, and Admin Panel structure.
+3. Identify which files and database tables belong to existing features.
+4. Make a safe backup of the existing code and database whenever the available environment supports it.
+5. Prepare an implementation plan that minimizes changes to existing functionality.
+
+Mandatory rules:
+
+- Do not rebuild the application from scratch.
+- Do not delete or replace existing files unnecessarily.
+- Do not remove, rename, or break existing routes, APIs, database tables, columns, or features.
+- Do not delete or reset existing school data.
+- Do not change the existing database technology or backend framework.
+- Do not overwrite existing configuration, environment variables, or deployment settings unnecessarily.
+- Add the new website functionality in a modular and backward-compatible way.
+- Reuse existing models, services, layouts, and utilities whenever appropriate.
+- Preserve existing functionality even if the new website uses a different visual design.
+- Do not make unrelated improvements that could introduce regressions.
+
+If any requested feature conflicts with the existing application, explain the conflict and propose a safe solution before making destructive changes.
+
+### 3. CRITICAL: DO NOT MODIFY THE EXISTING ADMIN LOGIN SYSTEM
+
+**The existing Admin Login System is protected and must remain unchanged.**
+
+Unless I explicitly approve a specific change, you must not modify:
+
+- The existing Admin Login page or its design.
+- The existing username and password verification process.
+- Password hashing and password verification functions.
+- Existing authentication routes and APIs.
+- Session management, login/logout processes, cookies, or authentication middleware.
+- Existing Super Admin account, username, password, account ID, role, or permissions.
+- Existing authentication-related database tables, columns, or records.
+- Existing login decorators, access-control rules, or security configuration.
+- Existing Admin Panel navigation and layout, except for adding a new Website Management menu item in a compatible manner.
+- Existing password-reset or account-recovery functionality.
+
+Additional requirements:
+
+1. Do not create a second Super Admin account or a separate authentication system.
+2. Do not add public demo accounts, quick-login buttons, or exposed credentials.
+3. Do not bypass authentication to make Website Management easier to access.
+4. Do not weaken existing authorization or security checks.
+5. Reuse the existing authenticated Super Admin session and permission system.
+6. Only authorized existing administrators may access Website Management.
+7. Public visitors must not be able to access private Admin Panel routes or administrative APIs.
+8. Keep the existing Admin Login URL and behavior unchanged.
+
+Before implementation, inspect the authentication-related files and treat them as protected files.
+
+If a proposed change appears to require modifying the existing authentication system, stop and explain the exact reason, affected files, and proposed solution. Wait for my explicit approval before making that change.
+
+After implementation, verify that the original login page, credentials, Super Admin account, login/logout, sessions, and permissions still work as before.
+
+### 4. EXISTING TECHNOLOGY STACK — MANDATORY
+
+My existing application uses:
+
+- Backend: Python 3
+- Backend Framework: Flask
+- Database: SQLite / PostgreSQL
+- Frontend: Use the existing frontend technologies and project structure.
+- Deployment: Preserve the current deployment configuration unless a change is necessary and approved.
+
+Rules:
+
+- Continue using Python 3 and Flask.
+- Maintain compatibility with the existing SQLite and PostgreSQL database configurations.
+- Do not replace Flask with Django, Node.js, PHP, or another backend framework.
+- Do not replace the existing database with Google Sheets, Firebase, or another database service.
+- Do not assume that a particular ORM or library is installed; inspect the project first.
+- If the application uses SQLAlchemy, continue using the existing SQLAlchemy setup.
+- Use database migrations or safe schema updates where necessary.
+- Avoid database-specific SQL where it would break compatibility between SQLite and PostgreSQL.
+
+### 5. REFERENCE WEBSITE
+
+Use the following website as the visual and structural reference:
+
+https://bschool.pages.dev/
+
+Analyze its publicly accessible layout, navigation, colors, typography, homepage sections, cards, spacing, responsive behavior, and overall school website presentation.
+
+Use it as design inspiration, not as a reason to replace my existing application.
+
+Create an original, polished implementation inspired by the reference website. Do not copy proprietary source code or assets without permission.
+
+If the reference website is inaccessible, proceed with a professional school website design using the requirements below.
+
+### 6. LANGUAGE REQUIREMENT — ENGLISH ONLY
+
+The new public school website must use English throughout.
+
+Requirements:
+
+- All public website headings, navigation labels, buttons, forms, notices, messages, section titles, and footer content must be in English.
+- Default public website content must be English.
+- Website Management controls for managing public website content should use English labels.
+- Keep the existing Admin Panel language and interface unchanged unless a separate change is explicitly approved.
+- Do not translate or rename existing Admin Panel modules as part of this project.
+- Allow administrators to enter English text, upload images, and manage content easily.
+
+### 7. MAIN OBJECTIVE
+
+Create a complete public school website that is connected to my existing School Management System.
+
+The website must:
+
+- Be accessible to the public through a dedicated website URL.
+- Have a modern, trustworthy, professional school identity.
+- Be fully responsive on desktop, tablet, and mobile.
+- Use real content saved in the database rather than hardcoded sample content.
+- Allow the Super Admin to manage website content through the existing Admin Panel.
+- Reflect published changes on the public website.
+- Preserve all existing school management functionality.
+- Use persistent server-side storage so published content is available across devices and browser sessions.
+- Keep private student, staff, examination, and administrative information protected.
+
+### 8. ADD A NEW “WEBSITE MANAGEMENT” MODULE
+
+Add a new **Website Management** menu item to the existing Admin Panel.
+
+This must be an additional module, not a replacement for any existing module.
+
+Use the existing authentication and authorization system. Do not create a new login system.
+
+The new module should contain the following management areas.
+
+#### 8.1 Website Dashboard
+
+Create a dashboard showing:
+
+- Website publication status.
+- Total published pages.
+- Total draft pages.
+- Total published notices.
+- Total gallery images.
+- Total published news articles.
+- Recently updated website content.
+- Quick links to website editing tools.
+
+Do not display fabricated statistics. Calculate them from actual database records.
+
+#### 8.2 General Website Settings
+
+Allow authorized administrators to manage:
+
+- School name.
+- School short name.
+- School logo.
+- Favicon.
+- School address.
+- Official phone number.
+- Official email address.
+- School description.
+- Established year.
+- EIIN or institutional identification number, if applicable.
+- Head teacher or principal name.
+- School opening hours.
+- Social media links.
+- Website contact information.
+- Footer text.
+- Copyright information.
+- Website visibility and publication status.
+
+These settings must be stored persistently in the database or an appropriate existing configuration mechanism.
+
+#### 8.3 Homepage Banner and Slider
+
+Allow administrators to:
+
+- Add multiple banner images.
+- Upload or replace banner images.
+- Set banner titles and subtitles.
+- Add optional descriptions.
+- Add button text and destination links.
+- Change the display order.
+- Enable or disable individual slides.
+- Edit or delete existing slides.
+- Set one slide as the primary banner if required.
+
+The public homepage must display only active, published slides.
+
+#### 8.4 Principal or Head Teacher Message
+
+Allow administrators to manage:
+
+- Principal or Head Teacher photograph.
+- Name and designation.
+- Message title.
+- Message content.
+- Display order.
+- Publication status.
+
+The message should appear in a professional homepage section.
+
+#### 8.5 School Information and About Us
+
+Provide management tools for:
+
+- About the School.
+- School History.
+- Mission and Vision.
+- School Objectives.
+- Infrastructure and Facilities.
+- Academic Philosophy.
+- Achievements.
+- Institutional Overview.
+
+Administrators must be able to edit existing information and add new information without modifying source code.
+
+#### 8.6 Teachers and Staff Directory
+
+Create a public-facing faculty directory using approved public information.
+
+Allow administrators to:
+
+- Add teacher or staff profiles.
+- Edit profiles.
+- Upload profile photographs.
+- Set names and designations.
+- Add department or subject information.
+- Add short biographies where appropriate.
+- Set display order.
+- Publish or unpublish profiles.
+- Delete profiles when authorized.
+
+Do not expose private contact details, credentials, salary information, or other confidential staff records.
+
+If teacher records already exist in the system, reuse them safely where appropriate. Do not duplicate records unnecessarily or expose private administrative data.
+
+#### 8.7 School Managing Committee
+
+Allow administrators to manage:
+
+- Committee member names.
+- Photographs.
+- Positions.
+- Short biographies.
+- Display order.
+- Publication status.
+
+This information must be editable from the Admin Panel.
+
+#### 8.8 Student Statistics and Achievements
+
+Allow administrators to manage public-facing statistics, such as:
+
+- Total students.
+- Total teachers.
+- Total classrooms.
+- Total years of institutional service.
+- Publicly approved achievements.
+
+Where statistics can be calculated safely from existing records, use actual database values. Where manual values are required, allow administrators to update them.
+
+Never publish private student information or statistics that expose sensitive records.
+
+#### 8.9 Featured Students and Awards
+
+Allow administrators to publish selected student achievements.
+
+Include:
+
+- Student name, where publication is authorized.
+- Class.
+- Achievement or award title.
+- Photograph, if approved.
+- Academic year.
+- Short description.
+- Publication status.
+
+Respect student privacy and applicable consent requirements. Do not automatically publish student photos, results, or personal information.
+
+#### 8.10 Notice Board
+
+Create a dynamic notice board.
+
+Allow administrators to:
+
+- Add notices.
+- Edit notices.
+- Delete notices.
+- Publish or unpublish notices.
+- Set notice title and content.
+- Set publication date.
+- Set optional expiry date.
+- Upload PDF attachments.
+- Set important or pinned notices.
+- Control display order.
+
+The public website must show only published notices that are currently valid.
+
+#### 8.11 News and Events
+
+Create a News & Events module.
+
+Allow administrators to:
+
+- Create news articles.
+- Add titles and article content.
+- Upload featured images.
+- Set publication dates.
+- Edit and delete articles.
+- Publish or unpublish content.
+- Add event dates and locations where relevant.
+- Display recent articles on the homepage.
+
+#### 8.12 Photo Gallery
+
+Allow administrators to:
+
+- Create gallery categories or albums.
+- Upload multiple images.
+- Add image captions.
+- Edit captions.
+- Change image order.
+- Publish or unpublish images.
+- Delete selected images.
+- Display images in a responsive gallery.
+- Open images in a lightbox or suitable enlarged view.
+
+Validate uploaded file types and sizes. Do not allow executable files to be uploaded as images.
+
+#### 8.13 Academic Information
+
+Provide editable public pages or sections for:
+
+- Academic Calendar.
+- Examination Information.
+- Academic Rules.
+- Class Information.
+- Subject Information.
+- Admission Information.
+- School Timings.
+- Academic Achievements.
+
+Do not expose unpublished examinations, private marks entry, confidential academic records, or other internal data.
+
+#### 8.14 Public Results and Downloads
+
+Provide a configurable public Results and Downloads section.
+
+Allow administrators to publish approved documents, such as:
+
+- Public examination results.
+- Result summaries.
+- Approved merit lists.
+- Academic calendars.
+- Admission forms.
+- Official PDF notices.
+- Other public documents.
+
+Do not expose private student records or unrestricted access to internal marksheets.
+
+If a public result-search feature is added, require an appropriate identifier and return only the information that the school has authorized for public disclosure.
+
+#### 8.15 Admission Information
+
+Allow administrators to manage:
+
+- Admission announcements.
+- Admission eligibility.
+- Application instructions.
+- Required documents.
+- Important dates.
+- Downloadable application forms.
+- Admission-related notices.
+- Contact information for admission enquiries.
+
+If an online admission form is implemented, validate submissions and store them securely. Do not alter the existing student admission workflow without explicit approval.
+
+#### 8.16 Contact Page
+
+Create a professional Contact Us page containing configurable:
+
+- School address.
+- Official telephone number.
+- Official email address.
+- Office hours.
+- Map or map link, if configured.
+- Contact form.
+
+Validate contact form submissions and apply reasonable spam protection. Never expose private administrator contact details.
+
+#### 8.17 Social Media and External Links
+
+Allow administrators to add, edit, reorder, activate, deactivate, and delete:
+
+- Facebook links.
+- YouTube links.
+- Other official social media links.
+- Useful educational links.
+- External institutional links.
+
+Validate URLs and handle external links safely.
+
+#### 8.18 Footer Management
+
+Allow administrators to manage:
+
+- School logo.
+- School name.
+- Address.
+- Official contact details.
+- Quick links.
+- Important links.
+- Social media icons.
+- Copyright text.
+
+### 9. CUSTOM PAGE AND SECTION BUILDER
+
+This is a mandatory feature.
+
+I want to create additional website pages and homepage sections from the existing Admin Panel without editing the source code for every new page.
+
+Create a Custom Page & Section Builder.
+
+Administrators should be able to:
+
+- Create new pages.
+- Edit page titles and content.
+- Set a unique page slug or URL.
+- Add text sections.
+- Add headings and paragraphs.
+- Add images.
+- Add buttons and links.
+- Add lists.
+- Add downloadable documents.
+- Change section order.
+- Enable or disable sections.
+- Save drafts.
+- Publish or unpublish pages.
+- Preview pages before publishing.
+- Edit or delete custom pages.
+- Configure whether a page appears in the main navigation or footer.
+- Reorder navigation items.
+- Create additional homepage sections.
+- Reuse existing approved content where appropriate.
+
+Use a safe, structured content model rather than executing arbitrary administrator-provided code.
+
+Do not allow public users to edit pages.
+
+Validate page slugs to prevent route conflicts, invalid URLs, and unauthorized access.
+
+Existing pages and routes must continue to work.
+
+### 10. PUBLIC WEBSITE STRUCTURE
+
+Create a professional public-facing website with the following suggested pages:
+
+1. Home
+2. About Us
+3. Message from the Principal
+4. Teachers and Staff
+5. Managing Committee
+6. Academic Information
+7. Notices
+8. News and Events
+9. Gallery
+10. Admissions
+11. Results and Downloads
+12. Contact Us
+13. Custom Pages created by the administrator
+
+The administrator must be able to control which applicable pages appear in the public navigation.
+
+Homepage sections should be manageable from Website Management and should include, where configured:
+
+- Header and school logo.
+- Main navigation.
+- Hero banner or slider.
+- School introduction.
+- Principal's message.
+- Quick links.
+- Important notices.
+- Latest news and events.
+- Academic statistics.
+- Teacher highlights.
+- Achievements.
+- Photo gallery preview.
+- Admission information.
+- Contact information.
+- Footer.
+
+Do not force every section to appear if the administrator has disabled it.
+
+### 11. DESIGN AND USER EXPERIENCE
+
+Create a polished, modern, professional school website.
+
+Requirements:
+
+- Responsive desktop, tablet, and mobile layouts.
+- Clear navigation.
+- Readable typography.
+- Consistent colors and spacing.
+- Professional school-style visual design.
+- Accessible buttons, forms, and links.
+- Appropriate image dimensions and cropping.
+- Loading, empty, error, and success states.
+- Clear confirmation before destructive administrative actions.
+- Clear success and error messages.
+- Pagination or sensible limits for large content lists.
+- Search and filtering where useful.
+- Good performance on slower internet connections.
+
+Use the reference website as inspiration while creating a cohesive design that fits the school's identity.
+
+The public website and Admin Panel must remain separate in purpose and access permissions.
+
+### 12. DATABASE AND PERSISTENT STORAGE
+
+Use the existing database architecture and follow its established conventions.
+
+Add only the database models and tables necessary for the new website functionality.
+
+Potential entities may include:
+
+- WebsiteSettings
+- WebsiteBanner
+- WebsitePage
+- WebsiteSection
+- WebsiteNavigationItem
+- WebsiteNotice
+- WebsiteNews
+- WebsiteEvent
+- WebsiteGallery
+- WebsiteGalleryImage
+- WebsiteTeacherProfile
+- WebsiteCommitteeMember
+- WebsiteAchievement
+- WebsiteDownload
+- WebsiteContactMessage
+
+These are suggested entities, not a requirement to create unnecessary duplicate tables. Reuse suitable existing models wherever possible.
+
+Requirements:
+
+- Data must persist across devices and browser sessions.
+- Do not use browser local storage as the primary database for published website content.
+- Do not store important records only in temporary memory.
+- Use appropriate relationships, indexes, validation, and constraints.
+- Keep existing data intact.
+- Make database changes through safe migrations or compatible initialization logic.
+- Do not reset the database during deployment.
+- Handle SQLite and PostgreSQL differences appropriately.
+
+### 13. IMAGE, DOCUMENT, AND MEDIA STORAGE
+
+The website must support uploading and managing:
+
+- School logos.
+- Banner images.
+- Teacher and committee photographs.
+- Gallery images.
+- News images.
+- PDF notices.
+- Admission forms.
+- Other approved public documents.
+
+Requirements:
+
+- Store uploaded files persistently.
+- Store file references and metadata in the database.
+- Use safe file names and validate file extensions and actual file types.
+- Apply file-size limits.
+- Restrict uploads to authorized administrators.
+- Prevent executable uploads and path traversal.
+- Avoid storing uploaded files only in temporary directories.
+- Use the existing upload system if it is already reliable.
+- Ensure media paths continue to work after deployment and application restarts.
+- Delete or replace associated files carefully without breaking unrelated records.
+
+If the current hosting environment does not provide persistent file storage, explain the limitation and propose a compatible persistent-storage solution before implementation.
+
+### 14. BACKEND, ROUTES, AND SECURITY
+
+Implement the new website using the existing Flask architecture.
+
+Requirements:
+
+- Reuse the existing application structure.
+- Organize new functionality into modular routes, blueprints, services, templates, or equivalent structures consistent with the current project.
+- Follow existing coding conventions.
+- Validate all inputs on the server.
+- Use parameterized queries or the existing ORM.
+- Apply authorization checks to every administrative operation.
+- Protect state-changing forms and requests against CSRF where applicable.
+- Escape or sanitize user-generated content to prevent cross-site scripting.
+- Validate and restrict file uploads.
+- Use secure error handling.
+- Do not reveal database credentials, secret keys, passwords, or stack traces to public users.
+- Do not hardcode production credentials.
+- Do not disable existing security protections.
+- Do not create public endpoints that expose internal administrative data.
+
+Public pages should display only published content. Drafts and unpublished content must be accessible only to authorized administrators.
+
+### 15. PUBLIC WEBSITE ROUTES
+
+Create suitable public routes according to the existing application structure, such as:
+
+- `/` — Homepage
+- `/about` — About Us
+- `/teachers` — Teachers and Staff
+- `/committee` — Managing Committee
+- `/notices` — Notice Board
+- `/news` — News and Events
+- `/gallery` — Photo Gallery
+- `/admissions` — Admission Information
+- `/results` — Public Results and Downloads
+- `/contact` — Contact Us
+- `/page/<slug>` — Published custom pages
+
+These routes are examples. Inspect existing routes first and avoid conflicts. If an existing route already serves the same purpose, extend it safely rather than replacing it.
+
+Keep all existing login and administrative routes unchanged.
+
+### 16. ADMIN PANEL INTEGRATION
+
+Add Website Management to the existing Admin Panel navigation without redesigning or replacing the existing Admin Panel.
+
+The new module must:
+
+- Follow the existing Admin Panel layout and visual conventions.
+- Reuse the existing authenticated session.
+- Enforce the existing authorization rules.
+- Provide clear Create, Edit, Publish, Unpublish, Preview, and Delete actions where appropriate.
+- Show confirmation before deleting content.
+- Handle validation errors clearly.
+- Support safe editing of existing website content.
+- Keep website management actions separate from student and examination management operations.
+
+Do not change existing navigation items, dashboard features, or other modules unnecessarily.
+
+### 17. SEARCH ENGINE AND WEBSITE METADATA
+
+Where practical, provide configurable:
+
+- Page title.
+- Meta description.
+- Social sharing image.
+- Favicon.
+- Canonical URL.
+- Search engine indexing settings.
+
+Generate page metadata safely. Allow administrators to control whether the public website should be indexed by search engines.
+
+Do not expose unpublished or private pages through search indexing or public sitemaps.
+
+### 18. IMPLEMENTATION WORKFLOW
+
+Follow this workflow carefully.
+
+**Phase 1 — Inspect**
+
+- Inspect the complete existing project.
+- Identify the framework, database, authentication system, templates, routes, and current features.
+- Identify protected authentication files.
+- Check existing storage and deployment limitations.
+- Report the proposed integration plan.
+
+**Phase 2 — Plan**
+
+- Identify the minimum required database changes.
+- Plan the Website Management module.
+- Plan public website routes and templates.
+- Plan persistent media storage.
+- Identify potential conflicts with existing functionality.
+- Do not make destructive changes.
+
+**Phase 3 — Implement**
+
+- Add the new database models and safe migrations.
+- Add Website Management routes and interfaces.
+- Build the public website.
+- Connect public pages to published database content.
+- Add media and document management.
+- Add the custom page and section builder.
+- Add validation and security controls.
+- Preserve all existing modules and login behavior.
+
+**Phase 4 — Test**
+
+- Test all new administrative operations.
+- Test public website pages.
+- Test file uploads and downloads.
+- Test content publication and unpublication.
+- Test responsive layouts.
+- Test database persistence.
+- Test existing authentication and administrative features.
+
+**Phase 5 — Report**
+
+Provide a clear summary of:
+
+- Files created.
+- Files modified.
+- Database changes.
+- New routes.
+- New Website Management features.
+- Security checks performed.
+- Tests completed and their actual results.
+- Any unresolved issues.
+- Deployment steps, if required.
+
+Do not claim a test passed unless it was actually performed.
+
+### 19. REQUIRED REGRESSION TESTS
+
+Before considering the task complete, verify the following.
+
+**Existing application:**
+
+- Existing Admin Login page still works.
+- Existing Super Admin credentials still work.
+- The original Super Admin account remains intact.
+- Login and logout work correctly.
+- Existing sessions and authorization rules remain intact.
+- Student records remain intact.
+- Class, section, shift, subject, and examination features remain intact.
+- Marks entry, results, and marksheets remain intact.
+- Existing backup and recovery features remain intact.
+- Existing routes and pages continue to work.
+
+**New public website:**
+
+- Homepage loads successfully.
+- Public pages load successfully.
+- Website settings can be saved and retrieved.
+- Banners can be created, edited, published, and deleted.
+- Notices and news can be managed.
+- Images and documents upload and display correctly.
+- Custom pages and sections can be created and published.
+- Draft content is not publicly accessible.
+- Published changes appear on the public website.
+- Content persists after refreshing the page and restarting the application.
+- Public visitors cannot access Website Management.
+- Responsive layouts work on common screen sizes.
+
+If a test fails, fix the new implementation without weakening existing authentication or damaging existing data.
+
+### 20. ACCEPTANCE CRITERIA
+
+The project will be considered complete only when:
+
+1. A professional public school website is integrated into the existing application.
+2. The website uses English throughout its public interface.
+3. The website is inspired by the supplied reference website.
+4. Website content can be managed through the existing Admin Panel.
+5. The Super Admin can add, edit, publish, unpublish, and delete website content as authorized.
+6. Custom pages and homepage sections can be created without editing source code for every new page.
+7. Content and uploaded files are stored persistently.
+8. Existing SQLite/PostgreSQL and Python/Flask compatibility is preserved.
+9. The existing Admin Login System remains unchanged unless I explicitly approve a specific modification.
+10. The existing Super Admin account and all existing school data remain intact.
+11. No existing application feature is removed or intentionally broken.
+12. Security and regression tests are performed and reported honestly.
+
+### 21. FINAL INSTRUCTION
+
+Start by inspecting my existing project and understanding how it currently works.
+
+Do not immediately replace files or rewrite the entire application.
+
+First identify the existing structure, protected authentication components, and possible conflicts. Then implement the new public school website as a separate, modular, backward-compatible feature.
+
+**My highest priorities are:**
+
+1. Preserve my existing Admin Login System and Super Admin account.
+2. Preserve all existing school data and features.
+3. Build a professional English-language public school website inspired by https://bschool.pages.dev/.
+4. Manage all public website content through the existing Admin Panel.
+5. Make the implementation secure, persistent, responsive, and compatible with my current Python Flask and SQLite/PostgreSQL application.
+
+If you cannot safely implement any requirement without risking existing functionality or data, stop and explain the issue before making the risky change.
+
+Do not remove, reset, replace, or weaken existing functionality without my explicit approval.
