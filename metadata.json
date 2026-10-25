@@ -1,0 +1,8 @@
+{
+  "name": "E-Biddalay - Bangladesh School Management System",
+  "description": "Comprehensive School Management Web Application for Bangladesh featuring Dynamic Results, Mark Distribution, Conversion Engine, Fees, Attendance, and Source Code ZIP Export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
