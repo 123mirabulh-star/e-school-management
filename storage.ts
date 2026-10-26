@@ -106,9 +106,7 @@ export function setSessionAuth(token: string, user: User | null): void {
       localStorage.removeItem(SESSION_KEY);
       localStorage.removeItem(TOKEN_KEY);
     }
-  } catch {
-    // Ignore storage errors
-  }
+  } catch {}
 }
 
 export function clearSessionAuth(): void {
@@ -117,9 +115,7 @@ export function clearSessionAuth(): void {
     sessionStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(TOKEN_KEY);
-  } catch {
-    // Ignore storage errors
-  }
+  } catch {}
 }
 
 export function setSessionUser(user: User | null): void {
@@ -133,9 +129,7 @@ export function setSessionUser(user: User | null): void {
       localStorage.removeItem(SESSION_KEY);
       localStorage.removeItem(TOKEN_KEY);
     }
-  } catch {
-    // Ignore storage errors
-  }
+  } catch {}
 }
 
 export function getInitialDatabase(): AppDatabase {
@@ -179,10 +173,6 @@ export function getInitialDatabase(): AppDatabase {
   };
 }
 
-/**
- * Returns a blank database with null/empty operational records so the administrator
- * can enter all institutional data (students, marks, exams, subjects) from scratch.
- */
 export function getBlankDatabase(currentUser?: User | null): AppDatabase {
   const currentYear = new Date().getFullYear().toString();
   return {
@@ -235,11 +225,6 @@ export function getBlankDatabase(currentUser?: User | null): AppDatabase {
   };
 }
 
-/**
- * Determines whether a given class level supports academic groups/streams
- * (e.g. Science, Humanities, Business Studies). Supports Class Nine, Class Ten,
- * and any college/higher secondary level classes dynamically.
- */
 export function classSupportsGroups(cls?: ClassLevel | null): boolean {
   if (!cls) return false;
   if (cls.hasGroups !== undefined) return cls.hasGroups;
@@ -269,11 +254,6 @@ export function classSupportsGroups(cls?: ClassLevel | null): boolean {
 
 export const DESIGNATED_SUPER_ADMIN_ID = '01936988967';
 
-/**
- * Enforces that exactly one Super Admin account exists in the application:
- * User ID: 01936988967 (Md. Mirabul Hossen).
- * Demotes any other account that may have been given Super Admin role to School Administrator.
- */
 export function enforceSingleSuperAdmin(users: User[]): User[] {
   if (!Array.isArray(users)) return [];
   let foundSuperAdmin = false;
@@ -297,7 +277,6 @@ export function enforceSingleSuperAdmin(users: User[]): User[] {
       };
     }
 
-    // Demote any unauthorized user with Super Admin role to School Administrator
     if (u.role === 'Super Admin') {
       return {
         ...u,
@@ -308,7 +287,6 @@ export function enforceSingleSuperAdmin(users: User[]): User[] {
     return u;
   });
 
-  // If the designated Super Admin was somehow missing, add him back immediately
   if (!foundSuperAdmin) {
     result.unshift({
       id: 'usr-mirabul',
@@ -340,45 +318,36 @@ export function loadDatabase(): AppDatabase {
       const parsed = JSON.parse(raw);
       base = { ...getInitialDatabase(), ...parsed };
 
-      // Ensure marksheet settings exist
       if (!base.schoolSettings.marksheetSettings) {
         base.schoolSettings.marksheetSettings = DEFAULT_MARKSHEET_SETTINGS;
       }
 
-      // Enforce strictly one Super Admin
       base.users = enforceSingleSuperAdmin(base.users || INITIAL_USERS);
 
-      // Ensure shifts exist
       if (!base.shifts || !Array.isArray(base.shifts) || base.shifts.length === 0) {
         base.shifts = INITIAL_SHIFTS;
       }
 
-      // Ensure routines exist
       if (!base.routines || !Array.isArray(base.routines) || base.routines.length === 0) {
         base.routines = INITIAL_ROUTINES;
       }
 
-      // Ensure groups exist
       if (!base.groups || !Array.isArray(base.groups) || base.groups.length === 0) {
         base.groups = INITIAL_GROUPS;
       }
 
-      // Ensure website data exists
       if (!base.website || !base.website.settings) {
         base.website = INITIAL_WEBSITE_DATA;
       } else {
-        // Only initialize customPages if explicitly undefined, NEVER override an empty array []
         if (base.website.customPages === undefined) {
           base.website.customPages = INITIAL_WEBSITE_DATA.customPages || [];
         }
 
-        // Initialize navigation items if undefined
         if (base.website.navigation === undefined) {
           base.website.navigation = INITIAL_WEBSITE_NAVIGATION;
         }
       }
 
-      // Synchronize dual-named fields so both legacy and modern components read the same data
       if (base.website) {
         if (!base.website.faculty && base.website.facultyProfiles) {
           base.website.faculty = base.website.facultyProfiles;
@@ -404,12 +373,10 @@ export function loadDatabase(): AppDatabase {
           base.website.featuredAwards = base.website.awards;
         }
 
-        // If gallery is empty but galleryAlbums has images, populate gallery
         if ((!base.website.gallery || base.website.gallery.length === 0) && base.website.galleryAlbums) {
           base.website.gallery = base.website.galleryAlbums.flatMap(a => a.images || []);
         }
 
-        // Ensure logoUrl is synchronized between website.settings and schoolSettings
         if (base.website.settings?.logoUrl && !base.schoolSettings?.logoUrl) {
           base.schoolSettings.logoUrl = base.website.settings.logoUrl;
         } else if (base.schoolSettings?.logoUrl && !base.website.settings?.logoUrl) {
@@ -418,11 +385,9 @@ export function loadDatabase(): AppDatabase {
       }
     }
 
-    // Ensure base does NOT have leaked session from raw JSON or storage
     base.currentUser = null;
     base.isAuthenticated = false;
 
-    // Check saved session in this tab / browser
     const savedUserId = sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY);
     const savedToken = sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
     if (savedUserId && savedToken) {
@@ -444,16 +409,13 @@ export function loadDatabase(): AppDatabase {
 }
 
 /**
- * Persists data to browser localStorage and asynchronously to the backend database server
- * so that all authorized devices and browsers access the identical synchronized data.
+ * Persists data with QuotaExceeded fallback protection and immediate server backup
  */
 export function saveDatabase(db: AppDatabase): void {
   try {
-    // Ensure single Super Admin rule before writing
     db.users = enforceSingleSuperAdmin(db.users);
 
     if (db.website) {
-      // Synchronize logoUrl bidirectionally
       if (db.website.settings?.logoUrl) {
         if (!db.schoolSettings) {
           db.schoolSettings = INITIAL_SCHOOL_SETTINGS;
@@ -461,7 +423,6 @@ export function saveDatabase(db: AppDatabase): void {
         db.schoolSettings.logoUrl = db.website.settings.logoUrl;
       }
 
-      // Synchronize dual fields so both views stay consistent
       if (db.website.faculty) db.website.facultyProfiles = db.website.faculty;
       if (db.website.facultyProfiles && !db.website.faculty) db.website.faculty = db.website.facultyProfiles;
 
@@ -475,11 +436,16 @@ export function saveDatabase(db: AppDatabase): void {
       if (db.website.featuredAwards && !db.website.awards) db.website.awards = db.website.featuredAwards;
     }
 
-    // CRITICAL SECURITY FIX: Never persist current authentication state to local storage
     const toStore = { ...db, currentUser: null, isAuthenticated: false };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
-    
-    // Cross-device server persistence
+
+    // ১. লোকাল স্টোরেজে সেভ করার চেষ্টা (মেমোরি ফুল থাকলে হ্যান্ডেল করবে)
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
+    } catch (e) {
+      console.warn('localStorage limit exceeded, falling back to direct server sync');
+    }
+
+    // ২. সার্ভার ফাইলে ডেটা নিশ্চিতভাবে সংরক্ষণ
     const token = getSessionToken();
     fetch('/api/db', {
       method: 'POST',
@@ -488,11 +454,17 @@ export function saveDatabase(db: AppDatabase): void {
         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       },
       body: JSON.stringify(toStore)
-    }).catch((err) => {
-      console.warn('Network or server save warning:', err);
+    })
+    .then(res => {
+      if (!res.ok) {
+        console.warn('Server responded with error while saving DB');
+      }
+    })
+    .catch((err) => {
+      console.warn('Server sync error:', err);
     });
   } catch (err) {
-    console.error('Failed to save to localStorage:', err);
+    console.error('Failed to save database:', err);
   }
 }
 
@@ -511,10 +483,13 @@ export async function syncDatabaseFromServer(): Promise<AppDatabase | null> {
     const serverDb = await res.json();
     if (serverDb && typeof serverDb === 'object' && Array.isArray(serverDb.students)) {
       serverDb.users = enforceSingleSuperAdmin(serverDb.users);
-      // Ensure no leaked session in received database
       serverDb.currentUser = null;
       serverDb.isAuthenticated = false;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(serverDb));
+      
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(serverDb));
+      } catch {}
+      
       return serverDb as AppDatabase;
     }
   } catch {
@@ -523,9 +498,6 @@ export async function syncDatabaseFromServer(): Promise<AppDatabase | null> {
   return null;
 }
 
-/**
- * Calls backend to initialize blank institution database with automatic disaster recovery snapshot
- */
 export async function initializeBlankDatabaseServer(blankDb: AppDatabase, requesterId: string): Promise<boolean> {
   try {
     const token = getSessionToken();
@@ -544,9 +516,6 @@ export async function initializeBlankDatabaseServer(blankDb: AppDatabase, reques
   }
 }
 
-/**
- * Updates Super Admin profile photo and details on backend
- */
 export async function updateSuperAdminProfileServer(avatar?: string, fullName?: string, email?: string): Promise<boolean> {
   try {
     const token = getSessionToken();
@@ -564,9 +533,6 @@ export async function updateSuperAdminProfileServer(avatar?: string, fullName?: 
   }
 }
 
-/**
- * Updates Super Admin security password on backend
- */
 export async function updateSuperAdminPasswordServer(currentPassword: string, newPassword: string): Promise<boolean> {
   try {
     const token = getSessionToken();
@@ -619,9 +585,6 @@ export interface DeleteStudentResult {
   };
 }
 
-/**
- * Server-authoritative student deletion / archival with relationship integrity checks
- */
 export async function deleteStudentFromServer(
   studentId: string,
   options?: { force?: boolean; archive?: boolean }
