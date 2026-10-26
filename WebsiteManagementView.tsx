@@ -224,12 +224,69 @@ export const WebsiteManagementView: React.FC<WebsiteManagementViewProps> = ({
     setTimeout(() => setSaveSuccess(null), 3500);
   };
 
-  // ----------------------------------------------------
-  // 1. GENERAL SETTINGS & LOGO MANAGEMENT
+ // ----------------------------------------------------
+  // 1. GENERAL SETTINGS & LOGO MANAGEMENT (FIXED & CRASH-PROOF)
   // ----------------------------------------------------
   const SettingsTab = () => {
     const [formData, setFormData] = useState(website.settings);
     const [statsData, setStatsData] = useState(website.statistics);
+    const [uploadingLogo, setUploadingLogo] = useState(false);
+    const [logoError, setLogoError] = useState<string | null>(null);
+
+    // Compress & resize image to prevent browser freeze and RAM overflow
+    const handleDirectLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        setLogoError('অনুগ্রহ করে একটি ছবি (JPG, PNG, WebP) নির্বাচন করুন');
+        return;
+      }
+
+      setUploadingLogo(true);
+      setLogoError(null);
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          // Resize image to max 600px width/height for fast loading & zero lag
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 600;
+
+          if (width > height && width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            // Convert to lightweight data URL (quality 0.82)
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+            setFormData(prev => ({ ...prev, logoUrl: compressedDataUrl }));
+          }
+          setUploadingLogo(false);
+        };
+        img.onerror = () => {
+          setLogoError('ছবিটি লোড করা সম্ভব হয়নি।');
+          setUploadingLogo(false);
+        };
+        img.src = event.target?.result as string;
+      };
+      reader.onerror = () => {
+        setLogoError('ফাইল রিড করতে ব্যর্থ হয়েছে।');
+        setUploadingLogo(false);
+      };
+      reader.readAsDataURL(file);
+    };
 
     const handleSave = (e: React.FormEvent) => {
       e.preventDefault();
@@ -256,36 +313,92 @@ export const WebsiteManagementView: React.FC<WebsiteManagementViewProps> = ({
           </button>
         </div>
 
-        {/* SECTION A: SCHOOL LOGO MANAGEMENT */}
+        {/* SECTION A: SCHOOL LOGO MANAGEMENT (STABLE & CRASH-PROOF) */}
         <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-blue-600" />
             <h4 className="font-extrabold text-slate-900 text-sm">Official School Logo Management</h4>
           </div>
           <p className="text-xs text-slate-500">
-            Upload the official school emblem or seal from your computer/mobile device, or provide a web URL.
+            Upload the official school emblem or seal from your computer/mobile device, or provide an image web URL.
             The saved logo appears in the website header, navbar, footer, and academic reports.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start pt-2">
-            <DeviceFileUpload
-              label="Official School Logo"
-              fileType="image"
-              value={formData.logoUrl || ''}
-              previewHeightClass="h-40"
-              onChange={(url) => setFormData({ ...formData, logoUrl: url })}
-              onClear={() => setFormData({ ...formData, logoUrl: '' })}
-              helperText="Upload official logo emblem (PNG, JPG, SVG, WebP with transparent background recommended)"
-            />
+            <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-4 shadow-2xs">
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                Select Logo Image
+              </label>
 
-            <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
+              <div className="space-y-3">
+                <input
+                  type="file"
+                  id="logoFileInput"
+                  accept="image/png, image/jpeg, image/webp"
+                  onChange={handleDirectLogoUpload}
+                  className="hidden"
+                />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <label
+                    htmlFor="logoFileInput"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg cursor-pointer transition flex items-center gap-2 shadow-xs"
+                  >
+                    <ImageIcon className="w-4 h-4" />
+                    {uploadingLogo ? 'প্রসেসিং হচ্ছে...' : 'Upload From Device'}
+                  </label>
+
+                  {formData.logoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, logoUrl: '' }))}
+                      className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-bold rounded-lg cursor-pointer transition flex items-center gap-1.5"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Remove Logo
+                    </button>
+                  )}
+                </div>
+
+                {logoError && (
+                  <p className="text-xs font-bold text-rose-600">{logoError}</p>
+                )}
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 mb-1">
+                    Or Enter Image URL:
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.logoUrl?.startsWith('data:') ? '✅ Device Image Uploaded' : (formData.logoUrl || '')}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (!val.startsWith('✅')) {
+                        setFormData(prev => ({ ...prev, logoUrl: val }));
+                      }
+                    }}
+                    placeholder="https://example.com/logo.png"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-slate-50 text-slate-800 font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3 shadow-2xs">
               <span className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
                 Public Header Preview
               </span>
               <div className="flex items-center gap-3 p-3 bg-slate-100/60 rounded-xl border border-slate-200">
-                <div className="w-14 h-14 rounded-xl bg-blue-950 p-1 flex items-center justify-center shrink-0 shadow-sm border border-blue-800">
+                <div className="w-14 h-14 rounded-xl bg-blue-950 p-1 flex items-center justify-center shrink-0 shadow-sm border border-blue-800 overflow-hidden">
                   {formData.logoUrl ? (
-                    <img src={formData.logoUrl} alt="Logo Preview" className="w-full h-full object-contain rounded-lg" />
+                    <img 
+                      src={formData.logoUrl} 
+                      alt="Logo Preview" 
+                      className="w-full h-full object-contain rounded-lg"
+                      onError={(e) => {
+                        // Prevent infinite loop on broken image URL
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
                   ) : (
                     <span className="text-white font-bold text-xl">{(formData.shortName || 'E').charAt(0)}</span>
                   )}
@@ -373,7 +486,7 @@ export const WebsiteManagementView: React.FC<WebsiteManagementViewProps> = ({
                 type="text"
                 value={formData.mottoBn || ''}
                 onChange={(e) => setFormData({ ...formData, mottoBn: e.target.value })}
-                placeholder="যেমন: জ্ঞান ও নৈতিকতায় সমৃদ্ধ ভবিষ্যৎ"
+                placeholder="যেমন: জ্ঞান ও নৈতিকতায় সমৃদ্ধ ভবিষ্যৎ"
                 className="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm text-slate-800"
               />
             </div>
