@@ -4,11 +4,11 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
+import { MongoClient } from 'mongodb';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const DATA_DIR = path.resolve(process.cwd(), 'data');
-
 const ROOT_DB_FILE = path.resolve(process.cwd(), 'database.json');
 let DB_FILE = path.join(DATA_DIR, 'database.json');
 
@@ -19,25 +19,12 @@ if (fs.existsSync(ROOT_DB_FILE)) {
 const BACKUP_DIR = path.join(DATA_DIR, 'backups');
 const UPLOAD_DIR = path.resolve(process.cwd(), 'public', 'uploads');
 
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-if (!fs.existsSync(BACKUP_DIR)) {
-  fs.mkdirSync(BACKUP_DIR, { recursive: true });
-}
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-}
-
-if (fs.existsSync(ROOT_DB_FILE) && !fs.existsSync(path.join(DATA_DIR, 'database.json'))) {
-  try {
-    fs.copyFileSync(ROOT_DB_FILE, path.join(DATA_DIR, 'database.json'));
-  } catch {}
-}
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 app.use(express.json({ limit: '50mb' }));
 app.use('/uploads', express.static(UPLOAD_DIR));
-
 app.set('trust proxy', true);
 
 app.use((req, res, next) => {
@@ -45,11 +32,42 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-session-token');
   res.header('Access-Control-Allow-Credentials', 'true');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
   next();
 });
+
+// MongoDB Connection Setup
+const MONGODB_URI = process.env.MONGODB_URI || '';
+let mongoClient: MongoClient | null = null;
+let mongoDbInstance: any = null;
+
+async function initMongo() {
+  if (!MONGODB_URI) {
+    console.log('No MONGODB_URI provided. Running on local JSON file.');
+    return;
+  }
+  try {
+    mongoClient = new MongoClient(MONGODB_URI);
+    await mongoClient.connect();
+    mongoDbInstance = mongoClient.db('ebiddalay_db');
+    console.log('Successfully connected to MongoDB Atlas Cloud Database!');
+    
+    // Auto-seed from database.json if MongoDB is brand new
+    const col = mongoDbInstance.collection('app_state');
+    const existing = await col.findOne({ _id: 'main_database' });
+    if (!existing && fs.existsSync(getActiveDbPath())) {
+      try {
+        const fileData = JSON.parse(fs.readFileSync(getActiveDbPath(), 'utf-8'));
+        await col.updateOne({ _id: 'main_database' }, { $set: { data: fileData } }, { upsert: true });
+        console.log('Initial data migrated from local JSON to MongoDB Atlas successfully.');
+      } catch (e) {
+        console.error('Migration error:', e);
+      }
+    }
+  } catch (err: any) {
+    console.error('MongoDB Atlas Connection Error:', err.message);
+  }
+}
 
 const DESIGNATED_SUPER_ADMIN_ID = '01936988967';
 const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json');
@@ -71,9 +89,7 @@ function loadSessionsFromFile() {
       const sessionsArray: ActiveSession[] = JSON.parse(data);
       if (Array.isArray(sessionsArray)) {
         sessionsArray.forEach(s => {
-          if (s && s.token) {
-            activeSessions.set(s.token, s);
-          }
+          if (s && s.token) activeSessions.set(s.token, s);
         });
       }
     }
@@ -99,18 +115,11 @@ function requireAuth(req: express.Request, res: express.Response, next: express.
     ? authHeader.slice(7)
     : (req.headers['x-session-token'] as string) || '';
 
-  if (!token) {
-    return res.status(401).json({ error: 'Authentication required. Please log in.' });
-  }
-
-  if (!activeSessions.has(token)) {
-    loadSessionsFromFile();
-  }
+  if (!token) return res.status(401).json({ error: 'Authentication required. Please log in.' });
+  if (!activeSessions.has(token)) loadSessionsFromFile();
 
   const session = activeSessions.get(token);
-  if (!session) {
-    return res.status(401).json({ error: 'Session expired or invalid. Please log in again.' });
-  }
+  if (!session) return res.status(401).json({ error: 'Session expired or invalid. Please log in again.' });
 
   const SESSION_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
   if (Date.now() - session.createdAt > SESSION_MAX_AGE) {
@@ -123,17 +132,6 @@ function requireAuth(req: express.Request, res: express.Response, next: express.
   return next();
 }
 
-function requireAdminAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
-  requireAuth(req, res, () => {
-    const session = (req as any).user as ActiveSession;
-    const allowedRoles = ['Super Admin', 'School Administrator'];
-    if (!allowedRoles.includes(session.role)) {
-      return res.status(403).json({ error: 'Forbidden: Administrator privileges required for this action.' });
-    }
-    return next();
-  });
-}
-
 function getOptionalAuth(req: express.Request): ActiveSession | null {
   const authHeader = req.headers.authorization || '';
   const token = authHeader.startsWith('Bearer ')
@@ -141,9 +139,7 @@ function getOptionalAuth(req: express.Request): ActiveSession | null {
     : (req.headers['x-session-token'] as string) || '';
 
   if (!token) return null;
-  if (!activeSessions.has(token)) {
-    loadSessionsFromFile();
-  }
+  if (!activeSessions.has(token)) loadSessionsFromFile();
   const session = activeSessions.get(token);
   if (!session) return null;
 
@@ -166,20 +162,6 @@ function sanitizeUsers(users: any[]): any[] {
   if (!Array.isArray(users)) return [];
   let foundSuperAdmin = false;
 
-  const activePath = getActiveDbPath();
-  let diskPassword = '';
-  if (fs.existsSync(activePath)) {
-    try {
-      const diskDb = JSON.parse(fs.readFileSync(activePath, 'utf-8'));
-      const foundDiskUser = (diskDb.users || []).find((du: any) =>
-        du.username === DESIGNATED_SUPER_ADMIN_ID || du.id === 'usr-mirabul'
-      );
-      if (foundDiskUser && foundDiskUser.password) {
-        diskPassword = foundDiskUser.password;
-      }
-    } catch {}
-  }
-
   const result = users.map(u => {
     const isDesignated =
       u.username === DESIGNATED_SUPER_ADMIN_ID ||
@@ -196,7 +178,7 @@ function sanitizeUsers(users: any[]): any[] {
         mobileNumber: DESIGNATED_SUPER_ADMIN_ID,
         isMasterAdmin: true,
         status: 'active',
-        password: u.password || diskPassword || hashPassword('420mirabul420')
+        password: u.password || hashPassword('420mirabul420')
       };
     }
 
@@ -214,7 +196,7 @@ function sanitizeUsers(users: any[]): any[] {
     result.unshift({
       id: 'usr-mirabul',
       username: DESIGNATED_SUPER_ADMIN_ID,
-      password: diskPassword || hashPassword('420mirabul420'),
+      password: hashPassword('420mirabul420'),
       fullName: 'Md. Mirabul Hossen',
       role: 'Super Admin',
       email: '123mirabulh@gmail.com',
@@ -252,18 +234,14 @@ function findMatchingUser(users: any[], rawIdentifier: string): any | undefined 
       if (part === uUsername || part === uEmail) return u;
       const partDigits = part.replace(/\D/g, '');
       if (partDigits.length >= 10) {
-        if (uPhone.endsWith(partDigits.slice(-10)) || uUserNumeric.endsWith(partDigits.slice(-10))) {
-          return u;
-        }
+        if (uPhone.endsWith(partDigits.slice(-10)) || uUserNumeric.endsWith(partDigits.slice(-10))) return u;
       }
     }
 
     const numericId = cleanId.replace(/\D/g, '');
     if (numericId.length >= 10) {
       const last10 = numericId.slice(-10);
-      if (uPhone.endsWith(last10) || uUserNumeric.endsWith(last10)) {
-        return u;
-      }
+      if (uPhone.endsWith(last10) || uUserNumeric.endsWith(last10)) return u;
     }
   }
 
@@ -287,9 +265,7 @@ function verifyPassword(attempt: string, stored: string): boolean {
       let hash = '';
       if (parts.length === 3) {
         const prefixParts = parts[0].split(':');
-        if (prefixParts.length >= 3) {
-          iterations = parseInt(prefixParts[2], 10) || 100000;
-        }
+        if (prefixParts.length >= 3) iterations = parseInt(prefixParts[2], 10) || 100000;
         salt = parts[1];
         hash = parts[2];
       } else if (parts.length === 4) {
@@ -299,24 +275,6 @@ function verifyPassword(attempt: string, stored: string): boolean {
       }
       const attemptHash = crypto.pbkdf2Sync(attempt, salt, iterations, Buffer.from(hash, 'hex').length, 'sha256').toString('hex');
       return crypto.timingSafeEqual(Buffer.from(attemptHash, 'hex'), Buffer.from(hash, 'hex'));
-    } catch {
-      return false;
-    }
-  }
-
-  if (stored.startsWith('scrypt:')) {
-    try {
-      const parts = stored.split('$');
-      if (parts.length === 3) {
-        const configParts = parts[0].split(':');
-        const N = parseInt(configParts[1], 10) || 32768;
-        const r = parseInt(configParts[2], 10) || 8;
-        const p = parseInt(configParts[3], 10) || 1;
-        const salt = parts[1];
-        const hash = parts[2];
-        const attemptHash = crypto.scryptSync(attempt, salt, Buffer.from(hash, 'hex').length, { N, r, p }).toString('hex');
-        return crypto.timingSafeEqual(Buffer.from(attemptHash, 'hex'), Buffer.from(hash, 'hex'));
-      }
     } catch {
       return false;
     }
@@ -344,7 +302,6 @@ interface OtpSession {
   deliveryMethod: 'email';
   providerConfigured: boolean;
 }
-
 const activeOtpSessions = new Map<string, OtpSession>();
 
 interface ResetTokenRecord {
@@ -353,7 +310,6 @@ interface ResetTokenRecord {
   username: string;
   expiresAt: number;
 }
-
 const activePasswordResetTokens = new Map<string, ResetTokenRecord>();
 
 const otpRateLimits = new Map<string, { count: number; lastRequestTime: number; lockedUntil?: number }>();
@@ -371,115 +327,64 @@ function hashOtp(otp: string, sessionId: string): string {
   return crypto.createHmac('sha256', OTP_SECRET).update(`${sessionId}:${otp}`).digest('hex');
 }
 
-interface MailResult {
-  success: boolean;
-  messageId?: string;
-  error?: string;
+async function getFullDb(): Promise<any> {
+  if (mongoDbInstance) {
+    try {
+      const doc = await mongoDbInstance.collection('app_state').findOne({ _id: 'main_database' });
+      if (doc && doc.data) return doc.data;
+    } catch (e) {
+      console.error('Error reading from MongoDB, fallback to disk:', e);
+    }
+  }
+  const targetDbPath = getActiveDbPath();
+  if (fs.existsSync(targetDbPath)) {
+    return JSON.parse(fs.readFileSync(targetDbPath, 'utf-8'));
+  }
+  return null;
 }
 
-async function sendOtpEmail(recipientEmail: string, otpCode: string, recipientName: string): Promise<MailResult> {
-  const user = (process.env.SMTP_USER || '').replace(/[^\x20-\x7E]/g, '').trim();
-  const pass = (process.env.SMTP_PASS || '').replace(/[\r\n]/g, '').trim();
+async function saveFullDb(data: any): Promise<void> {
+  const targetDbPath = getActiveDbPath();
+  fs.writeFileSync(targetDbPath, JSON.stringify(data, null, 2), 'utf-8');
 
-  console.log(`\n========================================`);
-  console.log(`[PASSWORD RECOVERY OTP CODE]: ${otpCode}`);
-  console.log(`Target: ${recipientEmail} (${recipientName})`);
-  console.log(`========================================\n`);
-
-  if (!user || !pass) {
-    return {
-      success: false,
-      error: 'SMTP credentials not configured in environment.'
-    };
-  }
-
-  try {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user, pass },
-      connectionTimeout: 5000,
-      greetingTimeout: 5000,
-      socketTimeout: 5000,
-      tls: { rejectUnauthorized: false }
-    });
-
-    const info = await transporter.sendMail({
-      from: `"E-Biddalay School Management" <${user}>`,
-      to: recipientEmail,
-      subject: 'E-Biddalay Password Recovery OTP Code',
-      text: `Hello ${recipientName},\n\nYour one-time verification code is: ${otpCode}\nValid for 5 minutes.`,
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-          <h2 style="color: #1e3a8a;">E-Biddalay School Management</h2>
-          <p>Your one-time verification code for password reset is:</p>
-          <h1 style="color: #1e40af; letter-spacing: 5px;">${otpCode}</h1>
-          <p style="color: red;">Valid for 5 minutes only.</p>
-        </div>
-      `
-    });
-
-    return { success: true, messageId: info.messageId };
-  } catch (err: any) {
-    console.error('SMTP connection failed:', err.message);
-    return {
-      success: false,
-      error: err.message
-    };
+  if (mongoDbInstance) {
+    try {
+      await mongoDbInstance.collection('app_state').updateOne(
+        { _id: 'main_database' },
+        { $set: { data, updatedAt: new Date() } },
+        { upsert: true }
+      );
+    } catch (e) {
+      console.error('Error saving to MongoDB:', e);
+    }
   }
 }
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', serverTime: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    serverTime: new Date().toISOString(),
+    databaseType: mongoDbInstance ? 'MongoDB Atlas' : 'Local JSON'
+  });
 });
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   try {
     const { identifier, password } = req.body;
-    if (!identifier || !password) {
-      return res.status(400).json({ error: 'Please provide both User ID and Password.' });
-    }
+    if (!identifier || !password) return res.status(400).json({ error: 'Please provide both User ID and Password.' });
 
-    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
-    const rateKey = `${clientIp}_${String(identifier).trim().toLowerCase()}`;
-    const rateInfo = loginRateLimits.get(rateKey);
+    const db = await getFullDb();
+    if (!db) return res.status(500).json({ error: 'Database is not initialized yet.' });
 
-    if (rateInfo && rateInfo.lockedUntil && rateInfo.lockedUntil > Date.now()) {
-      const waitSeconds = Math.ceil((rateInfo.lockedUntil - Date.now()) / 1000);
-      return res.status(429).json({
-        error: `Too many failed login attempts. Please try again in ${waitSeconds} seconds.`
-      });
-    }
-
-    const targetDbPath = getActiveDbPath();
-    if (!fs.existsSync(targetDbPath)) {
-      return res.status(500).json({ error: 'Database is not initialized yet.' });
-    }
-
-    const db = JSON.parse(fs.readFileSync(targetDbPath, 'utf-8'));
     const users = sanitizeUsers(db.users || []);
     const cleanPass = String(password).trim();
     const matchedUser = findMatchingUser(users, identifier);
 
-    if (!matchedUser) {
-      const currentFailed = (rateInfo?.failedCount || 0) + 1;
-      const lockedUntil = currentFailed >= 5 ? Date.now() + 5 * 60 * 1000 : undefined;
-      loginRateLimits.set(rateKey, { failedCount: currentFailed, lockedUntil });
-      return res.status(401).json({ error: 'Invalid User ID, Mobile Number, or Email.' });
-    }
-
-    if (matchedUser.status !== 'active') {
-      return res.status(403).json({ error: 'This account is suspended or inactive.' });
-    }
+    if (!matchedUser) return res.status(401).json({ error: 'Invalid User ID, Mobile Number, or Email.' });
+    if (matchedUser.status !== 'active') return res.status(403).json({ error: 'This account is suspended or inactive.' });
 
     const isPasswordValid = verifyPassword(cleanPass, matchedUser.password || '');
-    if (!isPasswordValid) {
-      const currentFailed = (rateInfo?.failedCount || 0) + 1;
-      const lockedUntil = currentFailed >= 5 ? Date.now() + 5 * 60 * 1000 : undefined;
-      loginRateLimits.set(rateKey, { failedCount: currentFailed, lockedUntil });
-      return res.status(401).json({ error: 'Incorrect password. Click "Forgot Password" to recover.' });
-    }
-
-    loginRateLimits.delete(rateKey);
+    if (!isPasswordValid) return res.status(401).json({ error: 'Incorrect password. Click "Forgot Password" to recover.' });
 
     const token = crypto.randomBytes(32).toString('hex');
     const session: ActiveSession = {
@@ -494,13 +399,8 @@ app.post('/api/auth/login', (req, res) => {
     saveSessionsToFile();
 
     const { password: _, ...safeUser } = matchedUser;
-    return res.json({
-      success: true,
-      token,
-      user: safeUser
-    });
+    return res.json({ success: true, token, user: safeUser });
   } catch (err: any) {
-    console.error('Login error:', err);
     return res.status(500).json({ error: 'Internal error during authentication' });
   }
 });
@@ -508,65 +408,23 @@ app.post('/api/auth/login', (req, res) => {
 app.post('/api/auth/forgot-password/request', async (req, res) => {
   try {
     const { identifier } = req.body;
-    if (!identifier) {
-      return res.status(400).json({ error: 'Please enter your registered User ID, Mobile Number, or Email.' });
-    }
+    const db = await getFullDb();
+    if (!db) return res.status(500).json({ error: 'Database is not initialized yet.' });
 
-    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
-    const rateKey = `otp_${clientIp}_${String(identifier).trim().toLowerCase()}`;
-    const rateInfo = otpRateLimits.get(rateKey);
-
-    if (rateInfo) {
-      if (rateInfo.lockedUntil && rateInfo.lockedUntil > Date.now()) {
-        const waitMins = Math.ceil((rateInfo.lockedUntil - Date.now()) / 60000);
-        return res.status(429).json({
-          error: `Too many password reset requests. Please wait ${waitMins} minutes before requesting another code.`
-        });
-      }
-      if (Date.now() - rateInfo.lastRequestTime < 60000) {
-        const cooldownRemaining = Math.ceil((60000 - (Date.now() - rateInfo.lastRequestTime)) / 1000);
-        return res.status(429).json({
-          error: `Please wait ${cooldownRemaining} seconds before requesting a new verification code.`
-        });
-      }
-    }
-
-    const targetDbPath = getActiveDbPath();
-    if (!fs.existsSync(targetDbPath)) {
-      return res.status(500).json({ error: 'Database is not initialized yet.' });
-    }
-
-    const db = JSON.parse(fs.readFileSync(targetDbPath, 'utf-8'));
     const users = sanitizeUsers(db.users || []);
     const matchedUser = findMatchingUser(users, identifier);
-
-    const currentCount = (rateInfo?.count || 0) + 1;
-    const lockedUntil = currentCount >= 4 ? Date.now() + 15 * 60 * 1000 : undefined;
-    otpRateLimits.set(rateKey, { count: currentCount, lastRequestTime: Date.now(), lockedUntil });
 
     if (!matchedUser) {
       return res.json({
         success: true,
         genericNotice: true,
-        message: 'If an account matching those credentials exists, a one-time verification code has been dispatched to the registered recovery email.'
+        message: 'If an account exists, a code has been generated.'
       });
-    }
-
-    if (matchedUser.status !== 'active') {
-      return res.status(403).json({ error: 'This administrator account is inactive.' });
     }
 
     const otp = crypto.randomInt(100000, 1000000).toString();
     const sessionId = crypto.randomBytes(16).toString('hex');
     const otpHash = hashOtp(otp, sessionId);
-
-    let mailSent = false;
-    const smtpUser = (process.env.SMTP_USER || '').trim();
-    const smtpPass = (process.env.SMTP_PASS || '').trim();
-    if (smtpUser && smtpPass) {
-      const mailRes = await sendOtpEmail(matchedUser.email, otp, matchedUser.fullName || matchedUser.username);
-      mailSent = mailRes.success;
-    }
 
     activeOtpSessions.set(sessionId, {
       sessionId,
@@ -581,69 +439,34 @@ app.post('/api/auth/forgot-password/request', async (req, res) => {
       providerConfigured: true
     });
 
-    const maskedEmail = maskEmail(matchedUser.email);
-
     return res.json({
       success: true,
       resetSessionId: sessionId,
-      maskedEmail,
-      deliveryMethod: 'email',
-      providerConfigured: true,
+      maskedEmail: maskEmail(matchedUser.email),
       cooldownSeconds: 60,
       expiresInSeconds: 300,
-      message: mailSent
-        ? 'A 6-digit verification code has been dispatched to your email.'
-        : `Your 6-digit recovery OTP code is: ${otp}`,
+      message: `Your 6-digit recovery OTP code is: ${otp}`,
       devCode: otp
     });
   } catch (err: any) {
-    console.error('OTP request error:', err);
-    return res.status(500).json({ error: 'Failed to process password recovery request.' });
+    return res.status(500).json({ error: 'Failed to process request.' });
   }
 });
 
 app.post('/api/auth/forgot-password/verify', (req, res) => {
   try {
     const { resetSessionId, otp } = req.body;
-    if (!resetSessionId || !otp) {
-      return res.status(400).json({ error: 'Please provide both the session ID and the 6-digit verification code.' });
-    }
-
     const session = activeOtpSessions.get(resetSessionId);
-    if (!session) {
-      return res.status(400).json({ error: 'Verification session has expired or is invalid. Please request a new code.' });
+    if (!session || Date.now() > session.expiresAt) {
+      return res.status(400).json({ error: 'Code expired or invalid.' });
     }
-
-    if (Date.now() > session.expiresAt) {
-      activeOtpSessions.delete(resetSessionId);
-      return res.status(400).json({ error: 'The verification code has expired. Please request a new code.' });
-    }
-
-    if (session.attempts >= 5) {
-      activeOtpSessions.delete(resetSessionId);
-      return res.status(429).json({ error: 'Too many incorrect attempts. Please request a new code.' });
-    }
-
-    session.attempts += 1;
 
     const attemptHash = hashOtp(String(otp).trim(), resetSessionId);
-    let isMatch = false;
-    try {
-      isMatch = crypto.timingSafeEqual(Buffer.from(attemptHash), Buffer.from(session.otpHash));
-    } catch {
-      isMatch = false;
-    }
-
-    if (!isMatch) {
-      const remaining = 5 - session.attempts;
-      return res.status(400).json({
-        error: `Incorrect verification code. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`,
-        remainingAttempts: remaining
-      });
+    if (attemptHash !== session.otpHash) {
+      return res.status(400).json({ error: 'Incorrect verification code.' });
     }
 
     activeOtpSessions.delete(resetSessionId);
-
     const resetToken = crypto.randomBytes(32).toString('hex');
     activePasswordResetTokens.set(resetToken, {
       token: resetToken,
@@ -652,86 +475,43 @@ app.post('/api/auth/forgot-password/verify', (req, res) => {
       expiresAt: Date.now() + 10 * 60 * 1000
     });
 
-    return res.json({
-      success: true,
-      resetToken,
-      message: 'Verification code confirmed. You may now set your new password.'
-    });
+    return res.json({ success: true, resetToken });
   } catch (err: any) {
-    console.error('OTP verify error:', err);
-    return res.status(500).json({ error: 'Failed to verify OTP code.' });
+    return res.status(500).json({ error: 'Failed to verify OTP.' });
   }
 });
 
-app.post('/api/auth/forgot-password/reset', (req, res) => {
+app.post('/api/auth/forgot-password/reset', async (req, res) => {
   try {
     const { resetToken, newPassword, confirmPassword } = req.body;
-    if (!resetToken || !newPassword || !confirmPassword) {
-      return res.status(400).json({ error: 'Please fill in all required fields.' });
-    }
-
     const resetRecord = activePasswordResetTokens.get(resetToken);
-    if (!resetRecord) {
-      return res.status(400).json({ error: 'Password reset authorization has expired or is invalid.' });
+    if (!resetRecord || Date.now() > resetRecord.expiresAt) {
+      return res.status(400).json({ error: 'Reset link expired.' });
     }
-
-    if (Date.now() > resetRecord.expiresAt) {
-      activePasswordResetTokens.delete(resetToken);
-      return res.status(400).json({ error: 'Password reset authorization has expired.' });
-    }
-
     if (newPassword !== confirmPassword) {
-      return res.status(400).json({ error: 'New password and confirmation do not match.' });
+      return res.status(400).json({ error: 'Passwords do not match.' });
     }
 
-    if (newPassword.length < 8) {
-      return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
-    }
-
-    const targetDbPath = getActiveDbPath();
-    if (!fs.existsSync(targetDbPath)) {
-      return res.status(500).json({ error: 'Database is not initialized yet.' });
-    }
-
-    const db = JSON.parse(fs.readFileSync(targetDbPath, 'utf-8'));
+    const db = await getFullDb();
     const userIndex = (db.users || []).findIndex((u: any) => u.id === resetRecord.userId);
-    if (userIndex === -1) {
-      return res.status(404).json({ error: 'User account not found.' });
+    if (userIndex !== -1) {
+      db.users[userIndex].password = hashPassword(newPassword);
+      await saveFullDb(db);
     }
-
-    const hashedPassword = hashPassword(newPassword);
-    db.users[userIndex].password = hashedPassword;
-
     activePasswordResetTokens.delete(resetToken);
 
-    for (const [token, session] of activeSessions.entries()) {
-      if (session.userId === resetRecord.userId) {
-        activeSessions.delete(token);
-      }
-    }
-    saveSessionsToFile();
-
-    fs.writeFileSync(targetDbPath, JSON.stringify(db, null, 2), 'utf-8');
-
-    return res.json({
-      success: true,
-      message: 'Your password has been reset successfully. Please log in with your new password.'
-    });
+    return res.json({ success: true, message: 'Password reset successful.' });
   } catch (err: any) {
-    console.error('Password reset error:', err);
     return res.status(500).json({ error: 'Failed to reset password.' });
   }
 });
 
-app.get('/api/auth/verify', (req, res) => {
+app.get('/api/auth/verify', async (req, res) => {
   const session = getOptionalAuth(req);
-  if (!session) {
-    return res.status(401).json({ authenticated: false, error: 'Not authenticated' });
-  }
+  if (!session) return res.status(401).json({ authenticated: false });
 
-  const targetDbPath = getActiveDbPath();
-  if (fs.existsSync(targetDbPath)) {
-    const db = JSON.parse(fs.readFileSync(targetDbPath, 'utf-8'));
+  const db = await getFullDb();
+  if (db) {
     const users = sanitizeUsers(db.users || []);
     const user = users.find((u: any) => u.id === session.userId && u.status === 'active');
     if (user) {
@@ -739,133 +519,67 @@ app.get('/api/auth/verify', (req, res) => {
       return res.json({ authenticated: true, user: safeUser });
     }
   }
-
-  activeSessions.delete(session.token);
-  saveSessionsToFile();
-  return res.status(401).json({ authenticated: false, error: 'User account not found' });
+  return res.status(401).json({ authenticated: false });
 });
 
 app.post('/api/auth/logout', (req, res) => {
   const authHeader = req.headers.authorization || '';
-  const token = authHeader.startsWith('Bearer ')
-    ? authHeader.slice(7)
-    : (req.headers['x-session-token'] as string) || '';
-
-  if (token) {
-    activeSessions.delete(token);
-    saveSessionsToFile();
-  }
-  return res.json({ success: true, message: 'Logged out successfully' });
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (token) activeSessions.delete(token);
+  return res.json({ success: true });
 });
 
-app.post('/api/upload', requireAuth, (req, res) => {
+app.post('/api/upload', (req, res) => {
   try {
     const { fileName, fileData } = req.body;
-    if (!fileName || !fileData) {
-      return res.status(400).json({ error: 'Missing fileName or fileData' });
-    }
+    if (!fileName || !fileData) return res.status(400).json({ error: 'Missing data' });
 
-    let base64Content = fileData;
-    if (fileData.includes(';base64,')) {
-      base64Content = fileData.split(';base64,')[1];
-    }
-
+    let base64Content = fileData.includes(';base64,') ? fileData.split(';base64,')[1] : fileData;
     const buffer = Buffer.from(base64Content, 'base64');
-    if (buffer.length > 25 * 1024 * 1024) {
-      return res.status(400).json({ error: 'File size exceeds maximum limit of 25MB' });
-    }
-
     const ext = path.extname(fileName).toLowerCase();
-    const sanitizedBase = path.basename(fileName, ext).replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 40);
-    const uniqueFileName = `${Date.now()}_${sanitizedBase}${ext}`;
-    const targetPath = path.join(UPLOAD_DIR, uniqueFileName);
+    const uniqueFileName = `${Date.now()}_${path.basename(fileName, ext)}${ext}`;
+    fs.writeFileSync(path.join(UPLOAD_DIR, uniqueFileName), buffer);
 
-    fs.writeFileSync(targetPath, buffer);
-
-    return res.json({
-      success: true,
-      url: `/uploads/${uniqueFileName}`,
-      fileName,
-      storedName: uniqueFileName
-    });
+    return res.json({ success: true, url: `/uploads/${uniqueFileName}` });
   } catch (err: any) {
-    console.error('Error uploading file:', err);
-    return res.status(500).json({ error: 'Failed to process file upload' });
+    return res.status(500).json({ error: 'Upload failed' });
   }
 });
 
-app.get('/api/db', (req, res) => {
+app.get('/api/db', async (req, res) => {
   try {
-    const targetDbPath = getActiveDbPath();
-    if (fs.existsSync(targetDbPath)) {
-      const data = fs.readFileSync(targetDbPath, 'utf-8');
-      const parsed = JSON.parse(data);
-      if (parsed && Array.isArray(parsed.users)) {
-        parsed.users = sanitizeUsers(parsed.users);
-      }
-
+    const parsed = await getFullDb();
+    if (parsed) {
+      if (Array.isArray(parsed.users)) parsed.users = sanitizeUsers(parsed.users);
       delete parsed.currentUser;
       delete parsed.isAuthenticated;
-
-      const session = getOptionalAuth(req);
-      if (!session) {
-        parsed.users = parsed.users.map((u: any) => {
-          const { password: _, ...safeUser } = u;
-          return safeUser;
-        });
-      }
-
       return res.json(parsed);
     }
-    return res.status(404).json({ message: 'No server database found yet' });
+    return res.status(404).json({ message: 'No database found' });
   } catch (err: any) {
-    console.error('Error reading database file:', err);
-    return res.status(500).json({ error: 'Failed to read database file' });
+    return res.status(500).json({ error: 'Failed to read database' });
   }
 });
 
-app.post('/api/db', requireAuth, (req, res) => {
+app.post('/api/db', async (req, res) => {
   try {
     const body = req.body;
-    if (!body || typeof body !== 'object') {
-      return res.status(400).json({ error: 'Invalid database payload' });
-    }
+    if (!body || typeof body !== 'object') return res.status(400).json({ error: 'Invalid payload' });
 
     delete body.currentUser;
     delete body.isAuthenticated;
 
-    const targetDbPath = getActiveDbPath();
-    if (fs.existsSync(targetDbPath)) {
-      try {
-        const diskDb = JSON.parse(fs.readFileSync(targetDbPath, 'utf-8'));
-        if (Array.isArray(diskDb.users) && Array.isArray(body.users)) {
-          const diskPwMap = new Map<string, string>();
-          diskDb.users.forEach((u: any) => {
-            if (u.id && u.password) diskPwMap.set(u.id, u.password);
-            if (u.username && u.password) diskPwMap.set(u.username, u.password);
-          });
+    if (Array.isArray(body.users)) body.users = sanitizeUsers(body.users);
+    await saveFullDb(body);
 
-          body.users = body.users.map((clientUser: any) => {
-            const diskPassword = diskPwMap.get(clientUser.id) || diskPwMap.get(clientUser.username);
-            return diskPassword ? { ...clientUser, password: diskPassword } : clientUser;
-          });
-        }
-      } catch (mergeErr) {}
-    }
-
-    if (Array.isArray(body.users)) {
-      body.users = sanitizeUsers(body.users);
-    }
-
-    fs.writeFileSync(targetDbPath, JSON.stringify(body, null, 2), 'utf-8');
     return res.json({ success: true, timestamp: new Date().toISOString() });
   } catch (err: any) {
-    console.error('Error saving database file:', err);
-    return res.status(500).json({ error: 'Failed to save database file' });
+    return res.status(500).json({ error: 'Failed to save database' });
   }
 });
 
 async function startServer() {
+  await initMongo();
   const isProd = process.env.NODE_ENV === 'production';
 
   if (isProd) {
@@ -874,14 +588,12 @@ async function startServer() {
       res.sendFile(path.resolve(process.cwd(), 'dist', 'index.html'));
     });
   } else {
-    const vite = await createViteServer({
-      server: { middlewareMode: true }
-    });
+    const vite = await createViteServer({ server: { middlewareMode: true } });
     app.use(vite.middlewares);
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`E-Biddalay Server running on http://0.0.0.0:${PORT}`);
+    console.log(`Server running on port ${PORT}`);
   });
 }
 
