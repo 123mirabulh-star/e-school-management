@@ -531,7 +531,7 @@ app.post('/api/auth/logout', (req, res) => {
   return res.json({ success: true });
 });
 
-// Image and PDF Upload endpoint - saves files as permanent Data URLs in MongoDB
+// Image and PDF Upload endpoint
 app.post('/api/upload', (req, res) => {
   try {
     const { fileName, fileData } = req.body;
@@ -539,7 +539,6 @@ app.post('/api/upload', (req, res) => {
 
     let permanentUrl = fileData;
 
-    // Convert raw base64 string to complete Data URI if mime-type is missing
     if (!fileData.startsWith('data:')) {
       const ext = path.extname(fileName || '').toLowerCase();
       let mimeType = 'application/octet-stream';
@@ -599,25 +598,21 @@ async function startServer() {
   const distPath = path.resolve(process.cwd(), 'dist');
   const hasDist = fs.existsSync(distPath);
 
-  // If built dist exists or production environment, serve static files (Zero RAM Overhead)
-  if (hasDist || process.env.NODE_ENV === 'production') {
+  // If built dist exists, serve production files to prevent Out-Of-Memory (OOM)
+  if (hasDist) {
     console.log('Serving production static build from dist folder...');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.resolve(distPath, 'index.html'));
     });
   } else {
-    // Lightweight Vite middleware configuration to prevent Out-Of-Memory (OOM) 502 crash
-    console.log('Starting lightweight Vite server mode...');
+    // Standard Vite setup without problematic options
+    console.log('Starting standard Vite development mode...');
     const vite = await createViteServer({
       server: {
-        middlewareMode: true,
-        hmr: false // Disable WebSocket HMR to avoid Render port-binding errors and memory spikes
+        middlewareMode: true
       },
-      appType: 'spa',
-      optimizeDeps: {
-        noDiscovery: true // Prevent infinite background file scanning that causes 502 crash
-      }
+      appType: 'spa'
     });
     app.use(vite.middlewares);
   }
