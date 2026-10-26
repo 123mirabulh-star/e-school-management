@@ -7,7 +7,7 @@ import nodemailer from 'nodemailer';
 import { MongoClient } from 'mongodb';
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = Number(process.env.PORT) || 8080;
 const DATA_DIR = path.resolve(process.cwd(), 'data');
 const ROOT_DB_FILE = path.resolve(process.cwd(), 'database.json');
 let DB_FILE = path.join(DATA_DIR, 'database.json');
@@ -313,9 +313,6 @@ interface ResetTokenRecord {
 }
 const activePasswordResetTokens = new Map<string, ResetTokenRecord>();
 
-const otpRateLimits = new Map<string, { count: number; lastRequestTime: number; lockedUntil?: number }>();
-const loginRateLimits = new Map<string, { failedCount: number; lockedUntil?: number }>();
-
 function maskEmail(email: string): string {
   if (!email || !email.includes('@')) return '******';
   const [local, domain] = email.split('@');
@@ -346,7 +343,11 @@ async function getFullDb(): Promise<any> {
 
 async function saveFullDb(data: any): Promise<void> {
   const targetDbPath = getActiveDbPath();
-  fs.writeFileSync(targetDbPath, JSON.stringify(data, null, 2), 'utf-8');
+  try {
+    fs.writeFileSync(targetDbPath, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (fsErr) {
+    console.warn('Warning: Could not write local file backup (ignorable on cloud):', fsErr);
+  }
 
   if (mongoDbInstance) {
     try {
@@ -594,15 +595,30 @@ app.post('/api/db', async (req, res) => {
 
 async function startServer() {
   await initMongo();
-  const isProd = process.env.NODE_ENV === 'production';
 
-  if (isProd) {
-    app.use(express.static(path.resolve(process.cwd(), 'dist')));
+  const distPath = path.resolve(process.cwd(), 'dist');
+  const hasDist = fs.existsSync(distPath);
+
+  // If built dist exists or production environment, serve static files (Zero RAM Overhead)
+  if (hasDist || process.env.NODE_ENV === 'production') {
+    console.log('Serving production static build from dist folder...');
+    app.use(express.static(distPath));
     app.get('*', (req, res) => {
-      res.sendFile(path.resolve(process.cwd(), 'dist', 'index.html'));
+      res.sendFile(path.resolve(distPath, 'index.html'));
     });
   } else {
-    const vite = await createViteServer({ server: { middlewareMode: true } });
+    // Lightweight Vite middleware configuration to prevent Out-Of-Memory (OOM) 502 crash
+    console.log('Starting lightweight Vite server mode...');
+    const vite = await createViteServer({
+      server: {
+        middlewareMode: true,
+        hmr: false // Disable WebSocket HMR to avoid Render port-binding errors and memory spikes
+      },
+      appType: 'spa',
+      optimizeDeps: {
+        noDiscovery: true // Prevent infinite background file scanning that causes 502 crash
+      }
+    });
     app.use(vite.middlewares);
   }
 
