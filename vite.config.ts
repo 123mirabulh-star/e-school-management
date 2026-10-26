@@ -1,36 +1,50 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { defineConfig, Plugin } from 'vite';
 
-// এই প্লাগিনটি সব নিখোঁজ সাবফোল্ডারের পাথ সরাসরি রুট ফাইলের সাথে মিলিয়ে দেবে
-const flatFileResolverPlugin = (): Plugin => ({
-  name: 'flat-file-resolver',
-  resolveId(source) {
-    if (source.startsWith('.') || source.startsWith('@/')) {
-      const fileName = path.basename(source);
-      // যদি ফাইলের এক্সটেনশন না থাকে তবে ধরে নেওয়া হবে
-      const possibleExtensions = ['', '.tsx', '.ts', '.js', '.jsx', '.json', '.css'];
-      for (const ext of possibleExtensions) {
-        const targetPath = path.resolve(__dirname, `${fileName}${ext}`);
-        // সরাসরি রুট ডিরেক্টরির ফাইলকে টার্গেট করবে
-        if (targetPath) {
-          // ইমপোর্ট পাথ যেমনই হোক, ফাইল নাম মিললে রুট থেকে সমাধান করবে
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// নিখোঁজ ফোল্ডারের পাথ স্বয়ংক্রিয়ভাবে রুট ফাইলের সাথে মিলিয়ে দেওয়ার প্লাগিন
+function rootFileFallbackPlugin(): Plugin {
+  return {
+    name: 'root-file-fallback',
+    enforce: 'pre',
+    resolveId(source, importer) {
+      // শুধুমাত্র রিলেটিভ বা অভ্যন্তরীণ ইমপোর্টগুলো চেক করবে
+      if (source.startsWith('.') || source.startsWith('@/')) {
+        const baseName = path.basename(source);
+        const extensions = ['', '.tsx', '.ts', '.jsx', '.js', '.json', '.css'];
+
+        for (const ext of extensions) {
+          const directFile = path.resolve(__dirname, `${baseName}${ext}`);
+          if (fs.existsSync(directFile) && !fs.statSync(directFile).isDirectory()) {
+            return directFile;
+          }
         }
       }
+      return null;
     }
-    return null;
-  }
-});
+  };
+}
 
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      rootFileFallbackPlugin(),
+      react(),
+      tailwindcss()
+    ],
     resolve: {
       alias: [
-        { find: /^@\//, replacement: path.resolve(__dirname, './') + '/' },
-        // পাথগুলোতে services, data, components ইত্যাদি থাকলে সরাসরি রুটে পাঠিয়ে দেবে
-        { find: /^(\.\.\/|\.\/)*(services|data|common|context|components|utils|website-management|public-website)\/(.*)$/, replacement: path.resolve(__dirname, './') + '/$3' }
+        { find: /^@\//, replacement: `${__dirname}/` },
+        {
+          find: /^.*?\/(services|data|common|context|components|utils|website-management|public-website)\/(.*)$/,
+          replacement: `${__dirname}/$2`
+        }
       ]
     },
     server: {
