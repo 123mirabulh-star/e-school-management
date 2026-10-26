@@ -24,6 +24,7 @@ if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use('/uploads', express.static(UPLOAD_DIR));
 app.set('trust proxy', true);
 
@@ -529,19 +530,32 @@ app.post('/api/auth/logout', (req, res) => {
   return res.json({ success: true });
 });
 
+// Image and PDF Upload endpoint - saves files as permanent Data URLs in MongoDB
 app.post('/api/upload', (req, res) => {
   try {
     const { fileName, fileData } = req.body;
-    if (!fileName || !fileData) return res.status(400).json({ error: 'Missing data' });
+    if (!fileName || !fileData) return res.status(400).json({ error: 'Missing file data' });
 
-    let base64Content = fileData.includes(';base64,') ? fileData.split(';base64,')[1] : fileData;
-    const buffer = Buffer.from(base64Content, 'base64');
-    const ext = path.extname(fileName).toLowerCase();
-    const uniqueFileName = `${Date.now()}_${path.basename(fileName, ext)}${ext}`;
-    fs.writeFileSync(path.join(UPLOAD_DIR, uniqueFileName), buffer);
+    let permanentUrl = fileData;
 
-    return res.json({ success: true, url: `/uploads/${uniqueFileName}` });
+    // Convert raw base64 string to complete Data URI if mime-type is missing
+    if (!fileData.startsWith('data:')) {
+      const ext = path.extname(fileName || '').toLowerCase();
+      let mimeType = 'application/octet-stream';
+
+      if (ext === '.pdf') mimeType = 'application/pdf';
+      else if (ext === '.jpg' || ext === '.jpeg') mimeType = 'image/jpeg';
+      else if (ext === '.png') mimeType = 'image/png';
+      else if (ext === '.webp') mimeType = 'image/webp';
+      else if (ext === '.svg') mimeType = 'image/svg+xml';
+      else if (ext === '.gif') mimeType = 'image/gif';
+
+      permanentUrl = `data:${mimeType};base64,${fileData}`;
+    }
+
+    return res.json({ success: true, url: permanentUrl });
   } catch (err: any) {
+    console.error('Upload handler error:', err);
     return res.status(500).json({ error: 'Upload failed' });
   }
 });
