@@ -85,6 +85,9 @@ const STORAGE_KEY = 'ebiddalay_school_db_v3_en';
 const SESSION_KEY = 'ebiddalay_session_user_v3';
 const TOKEN_KEY = 'ebiddalay_session_token_v3';
 
+// Safeguard flag: prevents new devices from auto-saving empty defaults to cloud
+let isCloudDataLoaded = false;
+
 export function getSessionToken(): string {
   try {
     return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY) || '';
@@ -311,10 +314,14 @@ export function loadDatabase(): AppDatabase {
     const raw = localStorage.getItem(STORAGE_KEY);
     let base: AppDatabase;
     if (!raw) {
+      // New device: use in-memory initial DB, but DO NOT save to server yet!
       base = getInitialDatabase();
       base.users = enforceSingleSuperAdmin(base.users);
-      saveDatabase(base);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(base));
+      } catch {}
     } else {
+      isCloudDataLoaded = true; // Cached data already exists
       const parsed = JSON.parse(raw);
       base = { ...getInitialDatabase(), ...parsed };
 
@@ -400,10 +407,9 @@ export function loadDatabase(): AppDatabase {
 
     return base;
   } catch (err) {
-    console.error('Error loading database, resetting to initial:', err);
+    console.error('Error loading database, returning initial fallback:', err);
     const initial = getInitialDatabase();
     initial.users = enforceSingleSuperAdmin(initial.users);
-    saveDatabase(initial);
     return initial;
   }
 }
@@ -438,11 +444,11 @@ export function saveDatabase(db: AppDatabase): void {
 
     const toStore = { ...db, currentUser: null, isAuthenticated: false };
 
-    // ১. লোকাল স্টোরেজে সেভ করার চেষ্টা (মেমোরি ফুল থাকলে হ্যান্ডেল করবে)
+    // ১. লোকাল স্টোরেজে সেভ করা
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
     } catch (e) {
-      console.warn('localStorage limit exceeded, falling back to direct server sync');
+      console.warn('localStorage limit exceeded, relying on direct server sync');
     }
 
     // ২. সার্ভার ফাইলে ডেটা নিশ্চিতভাবে সংরক্ষণ
@@ -458,6 +464,8 @@ export function saveDatabase(db: AppDatabase): void {
     .then(res => {
       if (!res.ok) {
         console.warn('Server responded with error while saving DB');
+      } else {
+        isCloudDataLoaded = true;
       }
     })
     .catch((err) => {
@@ -481,8 +489,9 @@ export async function syncDatabaseFromServer(): Promise<AppDatabase | null> {
     });
     if (!res.ok) return null;
     const serverDb = await res.json();
-    if (serverDb && typeof serverDb === 'object' && Array.isArray(serverDb.students)) {
-      serverDb.users = enforceSingleSuperAdmin(serverDb.users);
+    if (serverDb && typeof serverDb === 'object') {
+      isCloudDataLoaded = true; // Marked safe: cloud data fetched
+      serverDb.users = enforceSingleSuperAdmin(serverDb.users || []);
       serverDb.currentUser = null;
       serverDb.isAuthenticated = false;
       
