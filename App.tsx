@@ -480,8 +480,8 @@ export default function App() {
         </main>
 
         <footer className="py-4 border-t border-gray-200 bg-white text-center text-xs text-gray-500 no-print">
-          <p className="font-bold text-gray-800">Web Software Create by Md. Mirabul Hossen</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">E-Biddalay Cloud School Management • Enterprise Edition</p>
+          <p className="font-bold text-gray-800">Mirabul</p>
+          <p className="text-[11px] text-gray-400 mt-0.5">Shahid Kalam Smrity Biddanicketon</p>
         </footer>
       </div>
 
