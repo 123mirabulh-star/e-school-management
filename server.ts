@@ -592,6 +592,37 @@ app.post('/api/db', async (req, res) => {
   }
 });
 
+// [নতুন সংযোজিত রুট] শিক্ষার্থী সরাসরি ডিলিট করার এন্ডপয়েন্ট
+app.delete('/api/students/:id', async (req, res) => {
+  try {
+    const studentId = req.params.id;
+    const db = await getFullDb();
+    if (!db || !Array.isArray(db.students)) {
+      return res.status(404).json({ error: 'Database or students record not found' });
+    }
+
+    // তালিকা থেকে নির্দিষ্ট শিক্ষার্থীকে ফিল্টার করে বাদ দেওয়া
+    const initialCount = db.students.length;
+    db.students = db.students.filter((s: any) => String(s.id) !== String(studentId) && String(s.rollNumber) !== String(studentId));
+
+    if (db.students.length === initialCount) {
+      return res.status(404).json({ error: 'Student not found with the provided ID' });
+    }
+
+    // আপডেট করা ডেটাবেজ সংরক্ষণ করা
+    await saveFullDb(db);
+    return res.json({ success: true, message: 'Student deleted successfully' });
+  } catch (err: any) {
+    console.error('Failed to delete student:', err);
+    return res.status(500).json({ error: 'Internal server error while deleting student' });
+  }
+});
+
+// কোনো অজানা API রুটে রিকোয়েস্ট গেলে HTML ফেরত না দিয়ে JSON 404 ফেরত দেওয়া
+app.all('/api/*', (req, res) => {
+  res.status(404).json({ error: `API route ${req.method} ${req.path} not found.` });
+});
+
 async function startServer() {
   await initMongo();
 
