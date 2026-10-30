@@ -37,6 +37,17 @@ app.use((req, res, next) => {
   next();
 });
 
+// Configure SMTP Transporter using Render Environment Variables
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: Number(process.env.SMTP_PORT) || 465,
+  secure: process.env.SMTP_SECURE === 'true' || true,
+  auth: {
+    user: process.env.SMTP_USER || '123mirabulh@gmail.com',
+    pass: process.env.SMTP_PASS || '',
+  },
+});
+
 // MongoDB Connection Setup
 const MONGODB_URI = process.env.MONGODB_URI || '';
 let mongoClient: MongoClient | null = null;
@@ -407,6 +418,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// Forgot Password Request Route (Sends OTP via Email)
 app.post('/api/auth/forgot-password/request', async (req, res) => {
   try {
     const { identifier } = req.body;
@@ -420,7 +432,7 @@ app.post('/api/auth/forgot-password/request', async (req, res) => {
       return res.json({
         success: true,
         genericNotice: true,
-        message: 'If an account exists, a code has been generated.'
+        message: 'If an account exists, a verification code has been dispatched.'
       });
     }
 
@@ -441,14 +453,40 @@ app.post('/api/auth/forgot-password/request', async (req, res) => {
       providerConfigured: true
     });
 
+    // Send verification email via SMTP
+    if (matchedUser.email) {
+      try {
+        await transporter.sendMail({
+          from: process.env.SMTP_FROM || `"Shahid Kalam Smrity Biddanicketon" <${process.env.SMTP_USER}>`,
+          to: matchedUser.email,
+          subject: 'Account Password Recovery Code',
+          html: `
+            <div style="font-family: Arial, sans-serif; padding: 25px; color: #1e293b; background-color: #f8fafc; border-radius: 10px;">
+              <h2 style="color: #1e40af; margin-top: 0;">Password Recovery</h2>
+              <p>Dear <strong>${matchedUser.fullName || 'User'}</strong>,</p>
+              <p>Your 6-digit verification code for password reset is:</p>
+              <div style="font-size: 30px; font-weight: 800; letter-spacing: 8px; color: #2563eb; background: #ffffff; padding: 15px; text-align: center; border-radius: 8px; border: 1px dashed #3b82f6; margin: 20px 0;">
+                ${otp}
+              </div>
+              <p style="font-size: 13px; color: #64748b;">This code will expire in 5 minutes. If you did not request this, please disregard this email.</p>
+              <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+              <p style="font-size: 11px; color: #94a3b8; text-align: center;">Shahid Kalam Smrity Biddanicketon Management System</p>
+            </div>
+          `
+        });
+        console.log(`OTP successfully sent to ${matchedUser.email}`);
+      } catch (mailError) {
+        console.error('Nodemailer SMTP Error:', mailError);
+      }
+    }
+
     return res.json({
       success: true,
       resetSessionId: sessionId,
       maskedEmail: maskEmail(matchedUser.email),
       cooldownSeconds: 60,
       expiresInSeconds: 300,
-      message: `Your 6-digit recovery OTP code is: ${otp}`,
-      devCode: otp
+      message: `A 6-digit verification code has been dispatched to your email (${maskEmail(matchedUser.email)}).`
     });
   } catch (err: any) {
     return res.status(500).json({ error: 'Failed to process request.' });
@@ -592,7 +630,7 @@ app.post('/api/db', async (req, res) => {
   }
 });
 
-// [নতুন সংযোজিত রুট] শিক্ষার্থী সরাসরি ডিলিট করার এন্ডপয়েন্ট
+// Dedicated endpoint to delete students safely
 app.delete('/api/students/:id', async (req, res) => {
   try {
     const studentId = req.params.id;
@@ -601,7 +639,6 @@ app.delete('/api/students/:id', async (req, res) => {
       return res.status(404).json({ error: 'Database or students record not found' });
     }
 
-    // তালিকা থেকে নির্দিষ্ট শিক্ষার্থীকে ফিল্টার করে বাদ দেওয়া
     const initialCount = db.students.length;
     db.students = db.students.filter((s: any) => String(s.id) !== String(studentId) && String(s.rollNumber) !== String(studentId));
 
@@ -609,7 +646,6 @@ app.delete('/api/students/:id', async (req, res) => {
       return res.status(404).json({ error: 'Student not found with the provided ID' });
     }
 
-    // আপডেট করা ডেটাবেজ সংরক্ষণ করা
     await saveFullDb(db);
     return res.json({ success: true, message: 'Student deleted successfully' });
   } catch (err: any) {
@@ -618,7 +654,7 @@ app.delete('/api/students/:id', async (req, res) => {
   }
 });
 
-// কোনো অজানা API রুটে রিকোয়েস্ট গেলে HTML ফেরত না দিয়ে JSON 404 ফেরত দেওয়া
+// JSON fallback for unknown API routes
 app.all('/api/*', (req, res) => {
   res.status(404).json({ error: `API route ${req.method} ${req.path} not found.` });
 });
@@ -629,7 +665,6 @@ async function startServer() {
   const distPath = path.resolve(process.cwd(), 'dist');
   const hasDist = fs.existsSync(distPath);
 
-  // If built dist exists, serve production files to prevent Out-Of-Memory (OOM)
   if (hasDist) {
     console.log('Serving production static build from dist folder...');
     app.use(express.static(distPath));
@@ -637,7 +672,6 @@ async function startServer() {
       res.sendFile(path.resolve(distPath, 'index.html'));
     });
   } else {
-    // Standard Vite setup without problematic options
     console.log('Starting standard Vite development mode...');
     const vite = await createViteServer({
       server: {
