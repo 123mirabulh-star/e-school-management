@@ -422,7 +422,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Forgot Password Request Route (Sends OTP via Email)
+// Forgot Password Request Route (Sends OTP via Resend API)
 app.post('/api/auth/forgot-password/request', async (req, res) => {
   try {
     const { identifier } = req.body;
@@ -457,30 +457,44 @@ app.post('/api/auth/forgot-password/request', async (req, res) => {
       providerConfigured: true
     });
 
-    // Send verification email via SMTP
+    // Send email using Resend API (HTTP Port 443 - Never blocked by Render)
     if (matchedUser.email) {
       try {
-        await transporter.sendMail({
-          from: process.env.SMTP_FROM || `"Shahid Kalam Smrity Biddanicketon" <${process.env.SMTP_USER}>`,
-          to: matchedUser.email,
-          subject: 'Account Password Recovery Code',
-          html: `
-            <div style="font-family: Arial, sans-serif; padding: 25px; color: #1e293b; background-color: #f8fafc; border-radius: 10px;">
-              <h2 style="color: #1e40af; margin-top: 0;">Password Recovery</h2>
-              <p>Dear <strong>${matchedUser.fullName || 'User'}</strong>,</p>
-              <p>Your 6-digit verification code for password reset is:</p>
-              <div style="font-size: 30px; font-weight: 800; letter-spacing: 8px; color: #2563eb; background: #ffffff; padding: 15px; text-align: center; border-radius: 8px; border: 1px dashed #3b82f6; margin: 20px 0;">
-                ${otp}
-              </div>
-              <p style="font-size: 13px; color: #64748b;">This code will expire in 5 minutes. If you did not request this, please disregard this email.</p>
-              <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-              <p style="font-size: 11px; color: #94a3b8; text-align: center;">Shahid Kalam Smrity Biddanicketon Management System</p>
-            </div>
-          `
-        });
-        console.log(`OTP successfully sent to ${matchedUser.email}`);
+        const resendApiKey = process.env.RESEND_API_KEY;
+        if (resendApiKey) {
+          const emailResponse = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${resendApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: 'School Portal <onboarding@resend.dev>',
+              to: [matchedUser.email],
+              subject: 'Password Reset OTP Verification Code',
+              html: `
+                <div style="font-family: Arial, sans-serif; padding: 25px; color: #1e293b; background-color: #f8fafc; border-radius: 10px;">
+                  <h2 style="color: #1e40af; margin-top: 0;">Password Recovery</h2>
+                  <p>Dear <strong>${matchedUser.fullName || 'User'}</strong>,</p>
+                  <p>Your 6-digit verification code for password reset is:</p>
+                  <div style="font-size: 30px; font-weight: 800; letter-spacing: 8px; color: #2563eb; background: #ffffff; padding: 15px; text-align: center; border-radius: 8px; border: 1px dashed #3b82f6; margin: 20px 0;">
+                    ${otp}
+                  </div>
+                  <p style="font-size: 13px; color: #64748b;">This code will expire in 5 minutes. If you did not request this, please disregard this email.</p>
+                  <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+                  <p style="font-size: 11px; color: #94a3b8; text-align: center;">Shahid Kalam Smrity Biddanicketon Management System</p>
+                </div>
+              `
+            })
+          });
+
+          const resultData = await emailResponse.json();
+          console.log('Resend Response:', resultData);
+        } else {
+          console.warn('RESEND_API_KEY is not defined in environment variables.');
+        }
       } catch (mailError) {
-        console.error('Nodemailer SMTP Error:', mailError);
+        console.error('Email API Sending Error:', mailError);
       }
     }
 
@@ -490,7 +504,7 @@ app.post('/api/auth/forgot-password/request', async (req, res) => {
       maskedEmail: maskEmail(matchedUser.email),
       cooldownSeconds: 60,
       expiresInSeconds: 300,
-      message: `A 6-digit verification code has been dispatched to your email (${maskEmail(matchedUser.email)}).`
+      message: `A 6-digit verification code has been dispatched to your registered email (${maskEmail(matchedUser.email)}).`
     });
   } catch (err: any) {
     return res.status(500).json({ error: 'Failed to process request.' });
