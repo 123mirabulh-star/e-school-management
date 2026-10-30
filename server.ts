@@ -37,17 +37,21 @@ app.use((req, res, next) => {
   next();
 });
 
-// Configure SMTP Transporter using Render Environment Variables
+// Configure Gmail Transporter with proper port and timeout handling
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: Number(process.env.SMTP_PORT) || 465,
-  secure: process.env.SMTP_SECURE === 'true' || true,
+  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // Port 587 uses STARTTLS
   auth: {
     user: process.env.SMTP_USER || '123mirabulh@gmail.com',
     pass: process.env.SMTP_PASS || '',
   },
+  tls: {
+    rejectUnauthorized: false
+  },
+  connectionTimeout: 10000 // 10 seconds timeout
 });
-
 // MongoDB Connection Setup
 const MONGODB_URI = process.env.MONGODB_URI || '';
 let mongoClient: MongoClient | null = null;
